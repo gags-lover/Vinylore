@@ -1,0 +1,15 @@
+<resources>
+    <string name="app_name">Vinylore</string>
+    <string name="unknown_name">Unknown name</string>
+    <string name="no_albums_found">No albums found.</string>
+    <string name="could_not_find_data">Could not find data.</string>
+    <string name="something_went_wrong">Something went wrong.</string>
+    <string name="generic_error">Something went wrong.</string>
+    <string name="error_media_not_found">Media not found</string>
+    <string name="mock1">mock1</string>
+    <string name="mock2">mock2</string>
+    <string name="try_again">Try again</string>
+    <string name="you_should_chose_dir">You should chose directory where your files placed.</string>
+    <string name="chose_dir">Chose directory</string>
+    <string name="dir_is_empty">Directory is empty. Add some media</string>
+</resources>

@@ -1,0 +1,62 @@
+package com.github.astat1cc.vinylore.player.di
+
+import com.github.astat1cc.vinylore.core.database.AppDatabase
+import com.github.astat1cc.vinylore.player.ui.service.MediaPlayerServiceConnection
+import com.github.astat1cc.vinylore.player.ui.service.MusicMediaSource
+import com.github.astat1cc.vinylore.player.ui.AudioViewModel
+import com.google.android.exoplayer2.C
+import com.google.android.exoplayer2.ExoPlayer
+import com.google.android.exoplayer2.audio.AudioAttributes
+import com.google.android.exoplayer2.database.StandaloneDatabaseProvider
+import com.google.android.exoplayer2.upstream.DataSource
+import com.google.android.exoplayer2.upstream.DefaultDataSource
+import com.google.android.exoplayer2.upstream.cache.CacheDataSource
+import com.google.android.exoplayer2.upstream.cache.NoOpCacheEvictor
+import com.google.android.exoplayer2.upstream.cache.SimpleCache
+import org.koin.android.ext.koin.androidContext
+import org.koin.androidx.viewmodel.dsl.viewModel
+import org.koin.dsl.module
+import java.io.File
+
+val playerModule = module {
+    single {
+        providePlayerDao(database = get())
+    }
+    single {
+        AudioAttributes.Builder()
+            .setContentType(C.AUDIO_CONTENT_TYPE_MUSIC)
+            .setUsage(C.USAGE_MEDIA)
+            .build()
+    }
+    single {
+        ExoPlayer.Builder(androidContext())
+            .build()
+            .apply {
+                setAudioAttributes(get(), true)
+                setHandleAudioBecomingNoisy(true)
+            }
+    }
+    single<DataSource.Factory> {
+        DefaultDataSource.Factory(androidContext())
+    }
+    single<CacheDataSource.Factory> {
+        val cacheDir = File(androidContext().cacheDir, "media")
+        val databaseProvider = StandaloneDatabaseProvider(androidContext())
+        val cache = SimpleCache(cacheDir, NoOpCacheEvictor(), databaseProvider)
+        CacheDataSource.Factory().apply {
+            setCache(cache)
+            setUpstreamDataSourceFactory(get())
+        }
+    }
+    single {
+        MusicMediaSource(interactor = get())
+    }
+    single {
+        MediaPlayerServiceConnection(androidContext())
+    }
+    viewModel {
+        AudioViewModel(interactor = get(), serviceConnection = get())
+    }
+}
+
+fun providePlayerDao(database: AppDatabase) = database.playerDao()

@@ -1,4 +1,4 @@
-package com.github.astat1cc.vinylore.tracklist.ui
+package com.github.astat1cc.vinylore.tracklist.data
 
 import android.content.Context
 import android.net.Uri
@@ -24,9 +24,11 @@ interface AppFileProvider {
                     AlbumDataWrapper(
                         chosenDir.name ?: getDefaultName(), chosenDir.getTrackList()
                     )
-            return albumWrapperList.mapIndexed { index, albumWrapper ->
-                AppAlbum(index, albumWrapper.name, albumWrapper.trackList)
-            }
+            return albumWrapperList
+                .filter { albumData -> albumData.trackList.isNotEmpty() }
+                .mapIndexed { index, albumWrapper ->
+                    AppAlbum(index, albumWrapper.name, albumWrapper.trackList)
+                }
         }
 
         private fun DocumentFile.getInnerStoredAlbums(): List<AlbumDataWrapper> {

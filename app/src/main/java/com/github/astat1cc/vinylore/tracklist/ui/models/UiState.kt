@@ -2,11 +2,11 @@ package com.github.astat1cc.vinylore.tracklist.ui.models
 
 import com.github.astat1cc.vinylore.core.models.ui.AlbumUi
 
-sealed class UiState {
+sealed class UiState<T> {
 
-    class Success(val trackList: List<AlbumUi>?) : UiState()
+    class Success<T>(val trackList: T?) : UiState<T>()
 
-    class Fail(val message: String) : UiState()
+    class Fail<T>(val message: String) : UiState<T>()
 
-    object Loading : UiState()
+    class Loading<T> : UiState<T>()
 }

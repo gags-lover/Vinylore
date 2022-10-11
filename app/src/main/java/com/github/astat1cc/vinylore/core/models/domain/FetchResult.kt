@@ -1,8 +1,8 @@
 package com.github.astat1cc.vinylore.core.models.domain
 
-sealed class FetchResult {
+sealed class FetchResult<T> {
 
-    class Success(val albums: List<AppAlbum>?) : FetchResult()
+    class Success<T>(val data: T?) : FetchResult<T>()
 
-    class Fail(val error: ErrorType) : FetchResult()
+    class Fail<T>(val error: ErrorType) : FetchResult<T>()
 }

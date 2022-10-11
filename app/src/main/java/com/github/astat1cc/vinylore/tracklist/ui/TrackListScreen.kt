@@ -22,7 +22,7 @@ import org.koin.androidx.compose.getViewModel
 @Composable
 fun TrackListScreen(
     navController: NavHostController,
-    viewModel: TrackListViewModel = getViewModel(),
+    viewModel: TrackListScreenViewModel = getViewModel()
 ) {
     val uiState = viewModel.uiState.collectAsState() // todo check if ui is recomposing after the same data is collected
 

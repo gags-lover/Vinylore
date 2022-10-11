@@ -11,8 +11,9 @@ import com.github.astat1cc.vinylore.player.ui.vinyl.PlayerState
 fun VinylAnimation(
     modifier: Modifier = Modifier,
     playerState: PlayerState = PlayerState.STOPPED,
-    playerStartedListener: () -> Unit,
-    playerStoppedListener: () -> Unit
+//    playerStartedListener: () -> Unit,
+//    playerStoppedListener: () -> Unit,
+    playerStateChangedListener: (PlayerState) -> Unit
 ) {
     // Allow resume on rotation
     var currentRotation by remember { mutableStateOf(0f) }
@@ -22,7 +23,6 @@ fun VinylAnimation(
     LaunchedEffect(playerState) {
         when (playerState) {
             PlayerState.STARTED -> {
-                // Infinite repeatable rotation when is playing
                 rotation.animateTo(
                     targetValue = currentRotation + 360f,
                     animationSpec = infiniteRepeatable(
@@ -35,7 +35,6 @@ fun VinylAnimation(
             }
             PlayerState.STOPPING -> {
                 if (currentRotation > 0f) {
-                    // Slow down rotation on pause
                     rotation.animateTo(
                         targetValue = currentRotation + 50,
                         animationSpec = tween(
@@ -43,13 +42,13 @@ fun VinylAnimation(
                             easing = LinearOutSlowInEasing
                         )
                     ) {
-                        if (value == targetValue) playerStoppedListener()
+                        if (value == targetValue) playerStateChangedListener(playerState)
+//                            playerStoppedListener()
                         currentRotation = value
                     }
                 }
             }
             PlayerState.STARTING -> {
-                // Slow down rotation on pause
                 rotation.animateTo(
                     targetValue = currentRotation + 100,
                     animationSpec = tween(
@@ -58,7 +57,8 @@ fun VinylAnimation(
                         easing = FastOutLinearInEasing
                     )
                 ) {
-                    if (value == targetValue) playerStartedListener()
+                    if (value == targetValue) playerStateChangedListener(playerState)
+//                        playerStartedListener()
                     currentRotation = value
                 }
             }

@@ -1,6 +1,9 @@
 package com.github.astat1cc.vinylore.player.di
 
 import com.github.astat1cc.vinylore.core.database.AppDatabase
+import com.github.astat1cc.vinylore.player.data.MusicPlayerRepositoryImpl
+import com.github.astat1cc.vinylore.player.domain.MusicPlayerInteractor
+import com.github.astat1cc.vinylore.player.domain.MusicPlayerRepository
 import com.github.astat1cc.vinylore.player.ui.service.MediaPlayerServiceConnection
 import com.github.astat1cc.vinylore.player.ui.service.MusicMediaSource
 import com.github.astat1cc.vinylore.player.ui.AudioViewModel
@@ -54,8 +57,23 @@ val playerModule = module {
     single {
         MediaPlayerServiceConnection(androidContext())
     }
+    single<MusicPlayerRepository> {
+        MusicPlayerRepositoryImpl(sharedPrefs = get())
+    }
+    single<MusicPlayerInteractor> {
+        MusicPlayerInteractor.Impl(
+            playerRepository = get(),
+            trackListRepository = get(),
+            dispatchers = get(),
+            errorHandler = get()
+        )
+    }
     viewModel {
-        AudioViewModel(interactor = get(), serviceConnection = get())
+        AudioViewModel(
+            interactor = get(),
+            serviceConnection = get(),
+            errorHandler = get()
+        )
     }
 }
 

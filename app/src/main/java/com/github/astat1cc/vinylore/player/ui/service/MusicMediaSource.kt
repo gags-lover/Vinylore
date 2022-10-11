@@ -4,7 +4,7 @@ import android.support.v4.media.MediaBrowserCompat
 import android.support.v4.media.MediaBrowserCompat.MediaItem.FLAG_PLAYABLE
 import android.support.v4.media.MediaDescriptionCompat
 import android.support.v4.media.MediaMetadataCompat
-import com.github.astat1cc.vinylore.tracklist.domain.TrackListInteractor
+import com.github.astat1cc.vinylore.core.models.domain.FetchResult
 import com.github.astat1cc.vinylore.core.models.ui.AudioTrackUi
 import com.github.astat1cc.vinylore.player.domain.MusicPlayerInteractor
 import com.google.android.exoplayer2.MediaItem
@@ -12,7 +12,6 @@ import com.google.android.exoplayer2.source.ConcatenatingMediaSource
 import com.google.android.exoplayer2.source.ProgressiveMediaSource
 import com.google.android.exoplayer2.upstream.cache.CacheDataSource
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.withContext
 
 typealias OnReadyListener = (Boolean) -> Unit
@@ -43,9 +42,10 @@ class MusicMediaSource(
         state = AudioSourceState.INITIALIZING
 
         withContext(Dispatchers.IO) {
-            interactor.fetchTrackList().collect { trackListDomain ->
+            interactor.fetchTrackList().collect { fetchResult ->
+                if (fetchResult !is FetchResult.Success || fetchResult.data == null) return@collect
                 val trackListUi =
-                    trackListDomain.map { trackDomain -> AudioTrackUi.fromDomain(trackDomain) }
+                    fetchResult.data.map { trackDomain -> AudioTrackUi.fromDomain(trackDomain) }
                 audioMediaMetadata = trackListUi.map { track ->
                     MediaMetadataCompat.Builder()
                         .putString(MediaMetadataCompat.METADATA_KEY_MEDIA_ID, track.uri.toString())

@@ -3,7 +3,7 @@ package com.github.astat1cc.vinylore.core
 import com.github.astat1cc.vinylore.R
 import com.github.astat1cc.vinylore.core.models.domain.ErrorType
 
-interface ErrorHandler {
+interface AppErrorHandler {
 
     fun getErrorMessage(error: ErrorType): String
 
@@ -11,7 +11,7 @@ interface ErrorHandler {
 
     class Impl(
         private val resources: AppResourceProvider
-    ) : ErrorHandler {
+    ) : AppErrorHandler {
 
         override fun getErrorMessage(error: ErrorType): String =
             when (error) {

@@ -9,12 +9,14 @@ import android.support.v4.media.MediaBrowserCompat
 import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.MediaSessionCompat
 import android.support.v4.media.session.PlaybackStateCompat
+import android.util.Log
 import android.widget.Toast
 import androidx.media.MediaBrowserServiceCompat
 import com.github.astat1cc.vinylore.Consts
 import com.github.astat1cc.vinylore.Consts.MY_MEDIA_ROOT_ID
 import com.google.android.exoplayer2.ExoPlayer
 import com.google.android.exoplayer2.PlaybackException
+import com.google.android.exoplayer2.PlaybackParameters
 import com.google.android.exoplayer2.Player
 import com.google.android.exoplayer2.ext.mediasession.MediaSessionConnector
 import com.google.android.exoplayer2.upstream.cache.CacheDataSource
@@ -25,7 +27,9 @@ class MusicService : MediaBrowserServiceCompat() {
 
     private val dataSourceFactory by inject<CacheDataSource.Factory>()
 
-    private val exoPlayer by inject<ExoPlayer>()
+    private val trackExoPlayer by inject<ExoPlayer>()
+    private val crackleExoPLayer by inject<ExoPlayer>()
+    private val thirdExoPLayer by inject<ExoPlayer>()
 
     private val mediaSource by inject<MusicMediaSource>()
 
@@ -82,17 +86,17 @@ class MusicService : MediaBrowserServiceCompat() {
         mediaSessionConnector = MediaSessionConnector(mediaSession).apply {
             setPlaybackPreparer(AudioMediaPlayBackPreparer())
             setQueueNavigator(MediaQueueNavigator(mediaSource, mediaSession))
-            setPlayer(exoPlayer)
+            setPlayer(trackExoPlayer)
         }
 
-        musicNotificationManager.showNotification(exoPlayer)
+        musicNotificationManager.showNotification(trackExoPlayer)
     }
 
     override fun onDestroy() {
         super.onDestroy()
 
         serviceScope.cancel()
-        exoPlayer.release()
+        trackExoPlayer.release()
     }
 
     override fun onGetRoot(
@@ -128,8 +132,47 @@ class MusicService : MediaBrowserServiceCompat() {
         super.onCustomAction(action, extras, result)
 
         when (action) {
+            Consts.RESUME_MEDIA_PLAY_ACTION -> {
+                serviceScope.launch {
+                    crackleExoPLayer.playWhenReady = true
+                    trackExoPlayer.playWhenReady = true
+                    var currentSpeed = 0.1f
+                    while (currentSpeed < 1) {
+                        currentSpeed += 0.1f
+                        trackExoPlayer.playbackParameters =
+                            PlaybackParameters(
+                                currentSpeed,
+                                0.8f + currentSpeed / 10
+                            )
+                        trackExoPlayer.volume = currentSpeed * 2f
+                        delay(100L)
+                    }
+                    trackExoPlayer.playbackParameters = PlaybackParameters(1f, 1f)
+                }
+            }
+            Consts.PAUSE_MEDIA_PLAY_ACTION -> {
+                serviceScope.launch {
+                    var currentSpeed = 1f
+                    while (currentSpeed > 0.11) {
+                        currentSpeed -= 0.1f
+                        trackExoPlayer.playbackParameters =
+                            PlaybackParameters(
+                                currentSpeed,
+                                0.8f + currentSpeed / 10
+                            )
+                        trackExoPlayer.volume = currentSpeed * 1.2f
+                        delay(100L)
+                    }
+                    trackExoPlayer.playWhenReady = false
+                    crackleExoPLayer.playWhenReady = false
+
+                    // because it seems that app saves params even after closing app
+                    trackExoPlayer.playbackParameters = PlaybackParameters(1f, 1f)
+                    trackExoPlayer.volume = 1f
+                }
+            }
             Consts.START_MEDIA_PLAY_ACTION -> {
-                musicNotificationManager.showNotification(exoPlayer)
+                musicNotificationManager.showNotification(trackExoPlayer)
             }
             Consts.REFRESH_MEDIA_PLAY_ACTION -> {
                 mediaSource.refresh()
@@ -142,7 +185,7 @@ class MusicService : MediaBrowserServiceCompat() {
     override fun onTaskRemoved(rootIntent: Intent?) {
         super.onTaskRemoved(rootIntent)
 
-        with(exoPlayer) {
+        with(trackExoPlayer) {
             stop()
             clearMediaItems()
         }
@@ -207,12 +250,29 @@ class MusicService : MediaBrowserServiceCompat() {
                 mediaMetadata.indexOf(itemToPlay)
             }
 
-            with(exoPlayer) {
-                addListener(PlayerEventListener())
-                setMediaSource(mediaSource.asMediaSource(dataSourceFactory))
-                prepare()
-                seekTo(indexToPlay, 0)
-                this.playWhenReady = playWhenReady
+            serviceScope.launch {
+                val trackPlayerPreparing = launch {
+                    with(trackExoPlayer) {
+                        addListener(PlayerEventListener())
+                        setMediaSource(mediaSource.trackMediaSource(dataSourceFactory))
+                        prepare()
+//                    seekTo(indexToPlay, 0)
+                    }
+                }
+                val cracklePlayerPreparing = launch {
+                    with(crackleExoPLayer) {
+                        addListener(PlayerEventListener())
+                        setMediaSource(mediaSource.crackleMediaSource(dataSourceFactory))
+                        repeatMode = Player.REPEAT_MODE_ONE
+                        prepare()
+                    }
+                }
+                delay(3200L)
+                crackleExoPLayer.playWhenReady = playWhenReady
+                delay(2500L)
+                joinAll(trackPlayerPreparing, cracklePlayerPreparing)
+
+                trackExoPlayer.playWhenReady = playWhenReady
             }
         }
 
@@ -221,7 +281,7 @@ class MusicService : MediaBrowserServiceCompat() {
             override fun onPlaybackStateChanged(playbackState: Int) {
                 when (playbackState) {
                     Player.STATE_BUFFERING, Player.STATE_READY -> {
-                        musicNotificationManager.showNotification(exoPlayer)
+                        musicNotificationManager.showNotification(trackExoPlayer)
                     }
                     else -> musicNotificationManager.hideNotification()
                 }

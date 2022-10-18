@@ -6,7 +6,6 @@ import android.support.v4.media.MediaBrowserCompat
 import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.MediaControllerCompat
 import android.support.v4.media.session.PlaybackStateCompat
-import androidx.compose.runtime.mutableStateOf
 import com.github.astat1cc.vinylore.Consts
 import com.github.astat1cc.vinylore.core.models.ui.AudioTrackUi
 import kotlinx.coroutines.flow.*
@@ -21,21 +20,22 @@ class MediaPlayerServiceConnection(
     private val _isConnected = MutableStateFlow<Boolean>(false)
     val isConnected: StateFlow<Boolean> = _isConnected.asStateFlow()
 
-    val currentPlayingAudio = mutableStateOf<AudioTrackUi?>(null)
+    private val _currentPlayingAudio = MutableStateFlow<AudioTrackUi?>(null)
+    val currentPlayingAudio = _currentPlayingAudio.asStateFlow()
 
-    lateinit var mediaController: MediaControllerCompat
+    private lateinit var mediaController: MediaControllerCompat
 
-    private val mediaBrowserServiceCallback = MediaBrowserConnectionCallback(context)
+    private val mediaBrowserConnectionCallback = MediaBrowserConnectionCallback(context)
     private val mediaBrowser = MediaBrowserCompat(
         context,
         ComponentName(context, MusicService::class.java),
-        mediaBrowserServiceCallback,
+        mediaBrowserConnectionCallback,
         null
     ).apply {
         connect()
     }
 
-    private var audioList = listOf<AudioTrackUi>()
+    private var trackList = listOf<AudioTrackUi>()
 
     val rootMediaId: String
         get() = mediaBrowser.root
@@ -43,9 +43,26 @@ class MediaPlayerServiceConnection(
     val transportControl: MediaControllerCompat.TransportControls
         get() = mediaController.transportControls
 
-    fun playAudio(tracks: List<AudioTrackUi>) {
-        audioList = tracks
-        mediaBrowser.sendCustomAction(Consts.START_MEDIA_PLAY_ACTION, null, null)
+    fun slowPause() {
+        mediaBrowser.sendCustomAction(Consts.PAUSE_MEDIA_PLAY_ACTION, null, null)
+    }
+
+    fun slowResume() {
+        mediaBrowser.sendCustomAction(Consts.RESUME_MEDIA_PLAY_ACTION, null, null)
+    }
+
+    fun setTrackList(tracks: List<AudioTrackUi>) {
+        trackList = tracks
+        mediaBrowser.sendCustomAction(
+            Consts.START_MEDIA_PLAY_ACTION,
+            null,
+            null
+        ) // todo if i need this?
+        val trackToPlay = trackList.first()
+        transportControl.playFromMediaId(
+            trackToPlay.uri.toString(),
+            null
+        )
     }
 
     fun fastForward(seconds: Int = 10) {
@@ -113,9 +130,9 @@ class MediaPlayerServiceConnection(
         override fun onMetadataChanged(metadata: MediaMetadataCompat?) {
             super.onMetadataChanged(metadata)
 
-            currentPlayingAudio.value = metadata?.let { data ->
-                audioList.find { track ->
-                    track.uri == data.description.mediaUri
+            _currentPlayingAudio.value = metadata?.let {
+                trackList.find { track ->
+                    track.uri == metadata.description.mediaUri
                 }
             }
         }
@@ -123,7 +140,7 @@ class MediaPlayerServiceConnection(
         override fun onSessionDestroyed() {
             super.onSessionDestroyed()
 
-            mediaBrowserServiceCallback.onConnectionSuspended()
+            mediaBrowserConnectionCallback.onConnectionSuspended()
         }
     }
 }

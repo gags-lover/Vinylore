@@ -18,7 +18,7 @@ class MusicNotificationManager(
     private val notificationManager: PlayerNotificationManager
 
     init {
-        val mediaController = MediaControllerCompat(context, sessionToken)
+        val mediaController = MediaControllerCompat(context, sessionToken) // todo inject here and everywhere
         notificationManager =
             PlayerNotificationManager.Builder(context, NOTIFICATION_ID, CHANNEL_ID)
                 .setNotificationListener(notificationListener)
@@ -30,6 +30,8 @@ class MusicNotificationManager(
                     setSmallIcon(R.drawable.ic_music_note)
                     setUseRewindAction(false)
                     setUseFastForwardAction(false)
+                    setUseNextActionInCompactView(true)
+                    setUsePreviousActionInCompactView(true)
                 }
     }
 

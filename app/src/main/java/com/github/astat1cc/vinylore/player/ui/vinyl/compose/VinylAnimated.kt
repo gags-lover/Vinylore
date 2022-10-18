@@ -8,14 +8,11 @@ import androidx.compose.ui.unit.dp
 import com.github.astat1cc.vinylore.player.ui.vinyl.PlayerState
 
 @Composable
-fun VinylAnimation(
+fun VinylAnimated(
     modifier: Modifier = Modifier,
     playerState: PlayerState = PlayerState.STOPPED,
-//    playerStartedListener: () -> Unit,
-//    playerStoppedListener: () -> Unit,
-    playerStateChangedListener: (PlayerState) -> Unit
+    playerStateTransition: (PlayerState) -> Unit
 ) {
-    // Allow resume on rotation
     var currentRotation by remember { mutableStateOf(0f) }
 
     val rotation = remember { Animatable(currentRotation) }
@@ -26,7 +23,7 @@ fun VinylAnimation(
                 rotation.animateTo(
                     targetValue = currentRotation + 360f,
                     animationSpec = infiniteRepeatable(
-                        animation = tween(3000, easing = LinearEasing),
+                        animation = tween(1333, easing = LinearEasing),
                         repeatMode = RepeatMode.Restart
                     )
                 ) {
@@ -36,34 +33,33 @@ fun VinylAnimation(
             PlayerState.STOPPING -> {
                 if (currentRotation > 0f) {
                     rotation.animateTo(
-                        targetValue = currentRotation + 50,
+                        targetValue = currentRotation + 120f,
                         animationSpec = tween(
-                            durationMillis = 1250,
+                            durationMillis = 1333,
                             easing = LinearOutSlowInEasing
                         )
                     ) {
-                        if (value == targetValue) playerStateChangedListener(playerState)
-//                            playerStoppedListener()
+                        if (value == targetValue) playerStateTransition(playerState)
                         currentRotation = value
                     }
                 }
             }
             PlayerState.STARTING -> {
                 rotation.animateTo(
-                    targetValue = currentRotation + 100,
+                    targetValue = currentRotation + 180f,
                     animationSpec = tween(
-//                        durationMillis = 1250,
-                        durationMillis = 1250,
+                        durationMillis = 1000,
                         easing = FastOutLinearInEasing
                     )
                 ) {
-                    if (value == targetValue) playerStateChangedListener(playerState)
-//                        playerStartedListener()
                     currentRotation = value
+                    if (value > targetValue - 15f) playerStateTransition(playerState)
                 }
             }
             PlayerState.STOPPED -> {}
         }
     }
-    Vinyl(modifier = modifier.padding(24.dp), rotationDegrees = rotation.value)
+    Vinyl(modifier = modifier, rotationDegrees = rotation.value)
 }
+
+// 3000 and 1250

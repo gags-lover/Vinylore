@@ -4,13 +4,17 @@ import com.github.astat1cc.vinylore.core.database.AppDatabase
 import com.github.astat1cc.vinylore.player.data.MusicPlayerRepositoryImpl
 import com.github.astat1cc.vinylore.player.domain.MusicPlayerInteractor
 import com.github.astat1cc.vinylore.player.domain.MusicPlayerRepository
+import com.github.astat1cc.vinylore.player.ui.AudioViewModel
 import com.github.astat1cc.vinylore.player.ui.service.MediaPlayerServiceConnection
 import com.github.astat1cc.vinylore.player.ui.service.MusicMediaSource
-import com.github.astat1cc.vinylore.player.ui.AudioViewModel
-import com.google.android.exoplayer2.C
-import com.google.android.exoplayer2.ExoPlayer
+import com.google.android.exoplayer2.*
 import com.google.android.exoplayer2.audio.AudioAttributes
 import com.google.android.exoplayer2.database.StandaloneDatabaseProvider
+import com.google.android.exoplayer2.trackselection.AdaptiveTrackSelection
+import com.google.android.exoplayer2.trackselection.DefaultTrackSelector
+import com.google.android.exoplayer2.trackselection.DefaultTrackSelector.ParametersBuilder
+import com.google.android.exoplayer2.trackselection.TrackSelection
+import com.google.android.exoplayer2.trackselection.TrackSelector
 import com.google.android.exoplayer2.upstream.DataSource
 import com.google.android.exoplayer2.upstream.DefaultDataSource
 import com.google.android.exoplayer2.upstream.cache.CacheDataSource
@@ -20,6 +24,7 @@ import org.koin.android.ext.koin.androidContext
 import org.koin.androidx.viewmodel.dsl.viewModel
 import org.koin.dsl.module
 import java.io.File
+
 
 val playerModule = module {
     single {
@@ -31,11 +36,13 @@ val playerModule = module {
             .setUsage(C.USAGE_MEDIA)
             .build()
     }
-    single {
-        ExoPlayer.Builder(androidContext())
+    factory {
+        val defaultRenderersFactory =
+            DefaultRenderersFactory(androidContext()).setEnableAudioTrackPlaybackParams(true)
+        ExoPlayer.Builder(androidContext(), defaultRenderersFactory)
             .build()
             .apply {
-                setAudioAttributes(get(), true)
+                setAudioAttributes(get(), false)
                 setHandleAudioBecomingNoisy(true)
             }
     }

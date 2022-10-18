@@ -1,9 +1,8 @@
 package com.github.astat1cc.vinylore.player.ui
 
 import android.support.v4.media.MediaBrowserCompat
-import androidx.compose.runtime.getValue
+import android.support.v4.media.session.PlaybackStateCompat
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.github.astat1cc.vinylore.Consts
@@ -16,6 +15,7 @@ import com.github.astat1cc.vinylore.player.ui.service.currentPosition
 import com.github.astat1cc.vinylore.player.ui.service.isPlaying
 import com.github.astat1cc.vinylore.core.models.ui.AudioTrackUi
 import com.github.astat1cc.vinylore.player.domain.MusicPlayerInteractor
+import com.github.astat1cc.vinylore.player.ui.tonearm.TonearmState
 import com.github.astat1cc.vinylore.player.ui.vinyl.PlayerState
 import com.github.astat1cc.vinylore.tracklist.ui.models.UiState
 import kotlinx.coroutines.delay
@@ -33,45 +33,74 @@ class AudioViewModel(
             .map { fetchResult -> fetchResult.toUiState() }
             .stateIn(viewModelScope, SharingStarted.Lazily, UiState.Loading())
 
-    var currentPlayingAudio = serviceConnection.currentPlayingAudio
-    private val isConnected = serviceConnection.isConnected
-    lateinit var rootMediaId: String
-    var currentPlaybackPosition by mutableStateOf(0L)
+    private val _playerAnimationState = MutableStateFlow(PlayerState.STOPPED)
+    val playerAnimationState = _playerAnimationState.asStateFlow()
+
+    private val _tonearmAnimationState =
+        MutableStateFlow<TonearmState>(TonearmState.ON_START_POSITION)
+    val tonearmAnimationState: StateFlow<TonearmState> = _tonearmAnimationState.asStateFlow()
+
+    private val _currentPlaybackPosition: MutableStateFlow<Long> =
+        MutableStateFlow(0L)
+    val currentPlaybackPosition = _currentPlaybackPosition.asStateFlow()
+
+    private val currentPlayingAudio: StateFlow<AudioTrackUi?> =
+        serviceConnection.currentPlayingAudio
+
+    private val isConnected: StateFlow<Boolean> =
+        serviceConnection.isConnected
+
     private var updatePosition = true
-    private val playbackState =
+
+    private lateinit var rootMediaId: String
+
+    private val playbackState: StateFlow<PlaybackStateCompat?> =
         serviceConnection.playbackState // todo make flow of only needed variables
 
     private val isPlaying: StateFlow<Boolean> = playbackState.map { state ->
         state?.isPlaying == true
     }.stateIn(viewModelScope, SharingStarted.Lazily, false)
 
-    private val _playerAnimationState = MutableStateFlow(PlayerState.STOPPED)
-    val playerAnimationState = _playerAnimationState.asStateFlow()
+    private val shouldShowSmoothStartAndStopVinylAnimation = MutableStateFlow(false)
 
-    private val shouldShowSmoothStartAndStopVynilAnimation = MutableStateFlow(true)
+    val currentSongDuration = MusicService.curSongDuration
+    var currentAudioProgress = mutableStateOf(0f)
+
+
+    private val subscriptionCallback = object : MediaBrowserCompat.SubscriptionCallback() {
+
+        override fun onChildrenLoaded(
+            parentId: String,
+            children: MutableList<MediaBrowserCompat.MediaItem>
+        ) {
+            super.onChildrenLoaded(parentId, children)
+        }
+    }
+
+    private val serviceConnection = serviceConnection.also {
+        updatePlayback()
+    }
 
     init {
         viewModelScope.launch {
-            _playerAnimationState.emitAll(
-                isPlaying.map { isPlaying ->
-                    if (isPlaying) {
-                        if (shouldShowSmoothStartAndStopVynilAnimation.value) {
-                            PlayerState.STARTING
-                        } else PlayerState.STARTED
+            this@AudioViewModel.isPlaying.collect { isPlaying ->
+                if (isPlaying) {
+                    if (shouldShowSmoothStartAndStopVinylAnimation.value) {
+                        tryEmitPlayerState(PlayerState.STARTING)
                     } else {
-                        if (shouldShowSmoothStartAndStopVynilAnimation.value) {
-                            PlayerState.STOPPING
-                        } else PlayerState.STOPPED
+                        tryEmitPlayerState(PlayerState.STARTED)
                     }
+                } else {
+                    tryEmitPlayerState(PlayerState.STOPPED)
                 }
-            )
+            }
         }
         viewModelScope.launch {
             isConnected.collect { isConnected ->
                 if (isConnected) {
                     rootMediaId = serviceConnection.rootMediaId
                     serviceConnection.playbackState.value?.apply {
-                        currentPlaybackPosition = position
+                        _currentPlaybackPosition.value = position
                     }
                     serviceConnection.subscribe(rootMediaId, subscriptionCallback)
                 }
@@ -79,25 +108,35 @@ class AudioViewModel(
         }
     }
 
-    val isAudioPlaying: Boolean
-        get() = playbackState.value?.isPlaying == true
-    val currentSongDuration = MusicService.curSongDuration
-    var currentAudioProgress = mutableStateOf(0f)
+    fun playPauseToggle() {
+        val uiState = uiState.value
+        if (uiState !is UiState.Success || uiState.trackList == null) return // todo handle some error message
 
-
-    private val subscriptionCallback =
-        object : MediaBrowserCompat.SubscriptionCallback() {
-
-            override fun onChildrenLoaded(
-                parentId: String,
-                children: MutableList<MediaBrowserCompat.MediaItem>
-            ) {
-                super.onChildrenLoaded(parentId, children)
+        if (currentPlayingAudio.value != null) {
+            if (isPlaying.value) {
+                serviceConnection.slowPause()
+                tryEmitPlayerState(PlayerState.STOPPING)
+            } else {
+                serviceConnection.slowResume()
+                tryEmitPlayerState(PlayerState.STARTING)
+            }
+        } else {
+            serviceConnection.setTrackList(uiState.trackList)
+            tryEmitPlayerState(PlayerState.STARTING)
+            viewModelScope.launch {
+                delay(1500L)
+                _tonearmAnimationState.value = TonearmState.MOVING_TO_DISC
             }
         }
+    }
 
-    private val serviceConnection = serviceConnection.also {
-        updatePlayback()
+    private fun tryEmitPlayerState(newState: PlayerState) {
+        val oldState = _playerAnimationState.value
+        _playerAnimationState.value = when (newState) {
+            PlayerState.STARTING -> if (oldState != PlayerState.STARTED) newState else oldState
+            PlayerState.STOPPING -> if (oldState != PlayerState.STOPPED) newState else oldState
+            else -> newState
+        }
     }
 
     fun saveCurrentPlayingAlbumId(albumId: Int) = viewModelScope.launch {
@@ -119,26 +158,6 @@ class AudioViewModel(
                 )
             }
         }
-
-    fun playPauseToggle() {
-        val uiState = uiState.value
-        if (uiState !is UiState.Success || uiState.trackList == null) return // todo handle some error message
-        serviceConnection.playAudio(uiState.trackList)
-
-        if (currentPlayingAudio.value != null) {
-            if (isAudioPlaying) {
-                serviceConnection.transportControl.pause()
-            } else {
-                serviceConnection.transportControl.play()
-            }
-        } else {
-            val trackToPlay = uiState.trackList.first()
-            serviceConnection.transportControl.playFromMediaId(
-                trackToPlay.uri.toString(),
-                null
-            )
-        }
-    }
 
     fun stopPlayback() {
         serviceConnection.transportControl.stop()
@@ -165,12 +184,12 @@ class AudioViewModel(
     private fun updatePlayback() {
         viewModelScope.launch {
             val position = playbackState.value?.currentPosition ?: 0
-            if (currentPlaybackPosition != position) {
-                currentPlaybackPosition = position
+            if (_currentPlaybackPosition.value != position) {
+                _currentPlaybackPosition.value = position
             }
             if (currentSongDuration > 0) {
                 currentAudioProgress.value =
-                    currentPlaybackPosition.toFloat() / currentSongDuration.toFloat() * 100f
+                    _currentPlaybackPosition.value.toFloat() / currentSongDuration.toFloat() * 100f
             }
             delay(Consts.PLAYBACK_UPDATE_INTERVAL)
             if (updatePosition) {
@@ -184,32 +203,35 @@ class AudioViewModel(
 
         serviceConnection.unsubscribe(
             Consts.MY_MEDIA_ROOT_ID,
-            object : MediaBrowserCompat.SubscriptionCallback() {}
+            subscriptionCallback
         )
         updatePosition = false
     }
 
-    fun togglePlayerAnimationState(state: PlayerState) {
-//        _playerAnimationState.value = when (state) {
-//            PlayerState.STOPPED, PlayerState.STOPPING -> PlayerState.STARTING
-//            PlayerState.STARTED, PlayerState.STARTING -> PlayerState.STOPPING
-//        }
+    fun resumePlayerAnimationStateFrom(oldState: PlayerState) {
+        tryEmitPlayerState(
+            when (oldState) {
+                PlayerState.STARTING -> PlayerState.STARTED
+                PlayerState.STOPPING -> PlayerState.STOPPED
+                else -> return
+            }
+        )
     }
 
-    fun resumePlayerAnimationStateFrom(oldState: PlayerState) {
-        _playerAnimationState.value = when (oldState) {
-            PlayerState.STOPPING -> PlayerState.STOPPED
-            PlayerState.STARTING -> PlayerState.STARTED
+    fun resumeTonearmAnimationStateFrom(oldState: TonearmState) {
+        _tonearmAnimationState.value = when (oldState) {
+            TonearmState.MOVING_TO_DISC -> TonearmState.STAYING_ON_DISC
+            TonearmState.MOVING_FROM_DISC -> TonearmState.ON_START_POSITION
+            TonearmState.MOVING_ON_DISC -> TonearmState.MOVING_FROM_DISC
             else -> oldState
-
         }
     }
 
     fun composableIsVisible() {
-        shouldShowSmoothStartAndStopVynilAnimation.value = true
+        shouldShowSmoothStartAndStopVinylAnimation.value = true
     }
 
     fun composableIsInvisible() {
-        shouldShowSmoothStartAndStopVynilAnimation.value = false
+        shouldShowSmoothStartAndStopVinylAnimation.value = false
     }
 }

@@ -39,6 +39,7 @@ fun Vinyl(
             modifier = Modifier.fillMaxSize(),
             painter = painterResource(id = R.drawable.vinyl_light),
             contentDescription = "",
+            alpha = 0.5f
         )
 
         // Vinyl 'album' cover

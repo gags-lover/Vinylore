@@ -1,25 +1,23 @@
 package com.github.astat1cc.vinylore.player.ui.vinyl.compose
 
 import androidx.compose.animation.core.*
-import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
-import com.github.astat1cc.vinylore.player.ui.vinyl.PlayerState
+import com.github.astat1cc.vinylore.player.ui.vinyl.VinylDiscState
 
 @Composable
 fun VinylAnimated(
     modifier: Modifier = Modifier,
-    playerState: PlayerState = PlayerState.STOPPED,
-    playerStateTransition: (PlayerState) -> Unit
+    discState: VinylDiscState = VinylDiscState.STOPPED,
+    playerStateTransition: (VinylDiscState) -> Unit
 ) {
     var currentRotation by remember { mutableStateOf(0f) }
 
     val rotation = remember { Animatable(currentRotation) }
 
-    LaunchedEffect(playerState) {
-        when (playerState) {
-            PlayerState.STARTED -> {
+    LaunchedEffect(discState) {
+        when (discState) {
+            VinylDiscState.STARTED -> {
                 rotation.animateTo(
                     targetValue = currentRotation + 360f,
                     animationSpec = infiniteRepeatable(
@@ -30,7 +28,7 @@ fun VinylAnimated(
                     currentRotation = value
                 }
             }
-            PlayerState.STOPPING -> {
+            VinylDiscState.STOPPING -> {
                 if (currentRotation > 0f) {
                     rotation.animateTo(
                         targetValue = currentRotation + 120f,
@@ -39,12 +37,12 @@ fun VinylAnimated(
                             easing = LinearOutSlowInEasing
                         )
                     ) {
-                        if (value == targetValue) playerStateTransition(playerState)
+                        if (value == targetValue) playerStateTransition(discState)
                         currentRotation = value
                     }
                 }
             }
-            PlayerState.STARTING -> {
+            VinylDiscState.STARTING -> {
                 rotation.animateTo(
                     targetValue = currentRotation + 180f,
                     animationSpec = tween(
@@ -53,10 +51,10 @@ fun VinylAnimated(
                     )
                 ) {
                     currentRotation = value
-                    if (value > targetValue - 15f) playerStateTransition(playerState)
+                    if (value > targetValue - 15f) playerStateTransition(discState)
                 }
             }
-            PlayerState.STOPPED -> {}
+            VinylDiscState.STOPPED -> {}
         }
     }
     Vinyl(modifier = modifier, rotationDegrees = rotation.value)

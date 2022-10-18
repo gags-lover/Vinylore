@@ -12,19 +12,19 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.github.astat1cc.vinylore.R
-import com.github.astat1cc.vinylore.player.ui.vinyl.PlayerState
+import com.github.astat1cc.vinylore.player.ui.vinyl.VinylDiscState
 
 @Composable
 fun AudioControl(
     modifier: Modifier = Modifier,
-    playerState: PlayerState = PlayerState.STOPPED,
+    discState: VinylDiscState = VinylDiscState.STOPPED,
     tint: Color = MaterialTheme.colors.onPrimary,
     clickTogglePlayPause: () -> Unit
 ) {
     Icon(
         painter = painterResource(
-            id = when (playerState) {
-                PlayerState.STARTING, PlayerState.STARTED -> R.drawable.ic_pause
+            id = when (discState) {
+                VinylDiscState.STARTING, VinylDiscState.STARTED -> R.drawable.ic_pause
                 else -> R.drawable.ic_play
             }
         ),

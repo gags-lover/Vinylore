@@ -2,6 +2,7 @@ package com.github.astat1cc.vinylore.player.ui
 
 import android.support.v4.media.MediaBrowserCompat
 import android.support.v4.media.session.PlaybackStateCompat
+import android.util.Log
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -9,14 +10,11 @@ import com.github.astat1cc.vinylore.Consts
 import com.github.astat1cc.vinylore.core.AppErrorHandler
 import com.github.astat1cc.vinylore.core.models.domain.AppAudioTrack
 import com.github.astat1cc.vinylore.core.models.domain.FetchResult
-import com.github.astat1cc.vinylore.player.ui.service.MediaPlayerServiceConnection
-import com.github.astat1cc.vinylore.player.ui.service.MusicService
-import com.github.astat1cc.vinylore.player.ui.service.currentPosition
-import com.github.astat1cc.vinylore.player.ui.service.isPlaying
 import com.github.astat1cc.vinylore.core.models.ui.AudioTrackUi
 import com.github.astat1cc.vinylore.player.domain.MusicPlayerInteractor
+import com.github.astat1cc.vinylore.player.ui.service.*
 import com.github.astat1cc.vinylore.player.ui.tonearm.TonearmState
-import com.github.astat1cc.vinylore.player.ui.vinyl.PlayerState
+import com.github.astat1cc.vinylore.player.ui.vinyl.VinylDiscState
 import com.github.astat1cc.vinylore.tracklist.ui.models.UiState
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
@@ -33,7 +31,9 @@ class AudioViewModel(
             .map { fetchResult -> fetchResult.toUiState() }
             .stateIn(viewModelScope, SharingStarted.Lazily, UiState.Loading())
 
-    private val _playerAnimationState = MutableStateFlow(PlayerState.STOPPED)
+    private val playerState: StateFlow<PlayerState> = serviceConnection.playerState
+
+    private val _playerAnimationState = MutableStateFlow(VinylDiscState.STOPPED)
     val playerAnimationState = _playerAnimationState.asStateFlow()
 
     private val _tonearmAnimationState =
@@ -58,6 +58,8 @@ class AudioViewModel(
         serviceConnection.playbackState // todo make flow of only needed variables
 
     private val isPlaying: StateFlow<Boolean> = playbackState.map { state ->
+        Log.e("isplaying", "${state?.isPlaying ?: "null"}")
+
         state?.isPlaying == true
     }.stateIn(viewModelScope, SharingStarted.Lazily, false)
 
@@ -83,18 +85,44 @@ class AudioViewModel(
 
     init {
         viewModelScope.launch {
-            this@AudioViewModel.isPlaying.collect { isPlaying ->
-                if (isPlaying) {
-                    if (shouldShowSmoothStartAndStopVinylAnimation.value) {
-                        tryEmitPlayerState(PlayerState.STARTING)
-                    } else {
-                        tryEmitPlayerState(PlayerState.STARTED)
+            playerState.collect { state ->
+                when (state) {
+                    PlayerState.IDLE -> {
+                        tryEmitPlayerState(VinylDiscState.STOPPED)
+                        _tonearmAnimationState.value = TonearmState.ON_START_POSITION
                     }
-                } else {
-                    tryEmitPlayerState(PlayerState.STOPPED)
+                    PlayerState.LAUNCHING -> {
+                        tryEmitPlayerState(VinylDiscState.STARTING)
+                        _tonearmAnimationState.value = TonearmState.MOVING_TO_DISC
+                    }
+                    PlayerState.PLAYING -> {
+                        tryEmitPlayerState(VinylDiscState.STARTED)
+                        _tonearmAnimationState.value = TonearmState.STAYING_ON_DISC
+                    }
+                    PlayerState.PAUSED -> {
+                        tryEmitPlayerState(VinylDiscState.STOPPING)
+                        _tonearmAnimationState.value = TonearmState.STAYING_ON_DISC
+                    }
+                    PlayerState.TURNING_OFF -> {
+                        tryEmitPlayerState(VinylDiscState.STOPPING)
+                        _tonearmAnimationState.value = TonearmState.MOVING_FROM_DISC
+                    }
                 }
             }
         }
+//        viewModelScope.launch {
+//            this@AudioViewModel.isPlaying.collect { isPlaying ->
+//                if (isPlaying) {
+//                    if (shouldShowSmoothStartAndStopVinylAnimation.value) {
+//                        tryEmitPlayerState(VinylDiscState.STARTING)
+//                    } else {
+//                        tryEmitPlayerState(VinylDiscState.STARTED)
+//                    }
+//                } else {
+//                    tryEmitPlayerState(VinylDiscState.STOPPED)
+//                }
+//            }
+//        }
         viewModelScope.launch {
             isConnected.collect { isConnected ->
                 if (isConnected) {
@@ -115,26 +143,23 @@ class AudioViewModel(
         if (currentPlayingAudio.value != null) {
             if (isPlaying.value) {
                 serviceConnection.slowPause()
-                tryEmitPlayerState(PlayerState.STOPPING)
+//                tryEmitPlayerState(VinylDiscState.STOPPING)
             } else {
                 serviceConnection.slowResume()
-                tryEmitPlayerState(PlayerState.STARTING)
+//                tryEmitPlayerState(VinylDiscState.STARTING)
             }
         } else {
-            serviceConnection.setTrackList(uiState.trackList)
-            tryEmitPlayerState(PlayerState.STARTING)
-            viewModelScope.launch {
-                delay(1500L)
-                _tonearmAnimationState.value = TonearmState.MOVING_TO_DISC
-            }
+            serviceConnection.startPlaying(uiState.trackList)
+//            tryEmitPlayerState(VinylDiscState.STARTING)
+//            _tonearmAnimationState.value = TonearmState.MOVING_TO_DISC
         }
     }
 
-    private fun tryEmitPlayerState(newState: PlayerState) {
+    private fun tryEmitPlayerState(newState: VinylDiscState) {
         val oldState = _playerAnimationState.value
         _playerAnimationState.value = when (newState) {
-            PlayerState.STARTING -> if (oldState != PlayerState.STARTED) newState else oldState
-            PlayerState.STOPPING -> if (oldState != PlayerState.STOPPED) newState else oldState
+            VinylDiscState.STARTING -> if (oldState != VinylDiscState.STARTED) newState else oldState
+            VinylDiscState.STOPPING -> if (oldState != VinylDiscState.STOPPED) newState else oldState
             else -> newState
         }
     }
@@ -208,11 +233,11 @@ class AudioViewModel(
         updatePosition = false
     }
 
-    fun resumePlayerAnimationStateFrom(oldState: PlayerState) {
+    fun resumePlayerAnimationStateFrom(oldState: VinylDiscState) {
         tryEmitPlayerState(
             when (oldState) {
-                PlayerState.STARTING -> PlayerState.STARTED
-                PlayerState.STOPPING -> PlayerState.STOPPED
+                VinylDiscState.STARTING -> VinylDiscState.STARTED
+                VinylDiscState.STOPPING -> VinylDiscState.STOPPED
                 else -> return
             }
         )

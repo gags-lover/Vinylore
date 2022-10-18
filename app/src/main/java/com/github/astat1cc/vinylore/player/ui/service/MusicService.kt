@@ -29,7 +29,6 @@ class MusicService : MediaBrowserServiceCompat() {
 
     private val trackExoPlayer by inject<ExoPlayer>()
     private val crackleExoPLayer by inject<ExoPlayer>()
-    private val thirdExoPLayer by inject<ExoPlayer>()
 
     private val mediaSource by inject<MusicMediaSource>()
 

@@ -14,6 +14,9 @@ class MediaPlayerServiceConnection(
     context: Context
 ) {
 
+    private val _playerState = MutableStateFlow<PlayerState>(PlayerState.IDLE)
+    val playerState = _playerState.asStateFlow()
+
     private val _playbackState = MutableStateFlow<PlaybackStateCompat?>(null)
     val playbackState: StateFlow<PlaybackStateCompat?> = _playbackState.asStateFlow()
 
@@ -45,13 +48,15 @@ class MediaPlayerServiceConnection(
 
     fun slowPause() {
         mediaBrowser.sendCustomAction(Consts.PAUSE_MEDIA_PLAY_ACTION, null, null)
+        _playerState.value = PlayerState.PAUSED
     }
 
     fun slowResume() {
         mediaBrowser.sendCustomAction(Consts.RESUME_MEDIA_PLAY_ACTION, null, null)
+        _playerState.value = PlayerState.PLAYING
     }
 
-    fun setTrackList(tracks: List<AudioTrackUi>) {
+    fun startPlaying(tracks: List<AudioTrackUi>) {
         trackList = tracks
         mediaBrowser.sendCustomAction(
             Consts.START_MEDIA_PLAY_ACTION,
@@ -63,6 +68,7 @@ class MediaPlayerServiceConnection(
             trackToPlay.uri.toString(),
             null
         )
+        _playerState.value = PlayerState.LAUNCHING
     }
 
     fun fastForward(seconds: Int = 10) {

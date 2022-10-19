@@ -1,4 +1,4 @@
-package com.github.astat1cc.vinylore.player.ui.vinyl.compose
+package com.github.astat1cc.vinylore.player.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -9,9 +9,9 @@ import androidx.compose.material.MaterialTheme
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment.Companion.CenterEnd
 import androidx.compose.ui.Alignment.Companion.CenterHorizontally
+import androidx.compose.ui.Alignment.Companion.CenterStart
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
@@ -19,10 +19,13 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.navigation.NavHostController
+import com.github.astat1cc.vinylore.LAST_OPENED_ALBUM_ID
 import com.github.astat1cc.vinylore.R
 import com.github.astat1cc.vinylore.core.theme.matteBlack
-import com.github.astat1cc.vinylore.player.ui.AudioViewModel
+import com.github.astat1cc.vinylore.navigation.NavigationTree
 import com.github.astat1cc.vinylore.player.ui.tonearm.TonearmAnimated
+import com.github.astat1cc.vinylore.player.ui.vinyl.compose.AudioControl
+import com.github.astat1cc.vinylore.player.ui.vinyl.compose.VinylAnimated
 import com.github.astat1cc.vinylore.tracklist.ui.models.UiState
 import org.koin.androidx.compose.getViewModel
 
@@ -33,7 +36,7 @@ fun PlayerScreen(
     viewModel: AudioViewModel = getViewModel(),
     lifecycleOwner: LifecycleOwner = LocalLifecycleOwner.current
 ) {
-    viewModel.saveCurrentPlayingAlbumId(albumId)
+    if (albumId != LAST_OPENED_ALBUM_ID) viewModel.saveCurrentPlayingAlbumId(albumId)
 
     val uiState = viewModel.uiState.collectAsState()
     val discAnimationState = viewModel.playerAnimationState.collectAsState()
@@ -54,26 +57,30 @@ fun PlayerScreen(
         }
     }
 
-//    Box(modifier = Modifier.fillMaxSize()) {
-//        Image(
-//            modifier = Modifier.fillMaxSize(),
-//            painter = painterResource(R.drawable.player_background),
-//            contentDescription = null,
-//            contentScale = ContentScale.FillHeight
-//        )
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(matteBlack)
     ) {
         Box(
-            modifier = Modifier
-                .fillMaxWidth()
-//                .background(Color.Gray)
+            modifier = Modifier.fillMaxWidth()
         ) {
             Icon(
+                painter = painterResource(R.drawable.ic_show_album_list),
+                contentDescription = null,
+                tint = MaterialTheme.colors.onPrimary,
+                modifier = Modifier
+                    .align(CenterStart)
+                    .clip(CircleShape)
+                    .clickable(onClick = {
+                        navController.navigate(NavigationTree.TrackList.name)
+                    })
+                    .size(48.dp)
+                    .padding(12.dp)
+            )
+            Icon(
                 painter = painterResource(id = R.drawable.ic_list),
-                contentDescription = "", // todo
+                contentDescription = null, // todo
                 tint = MaterialTheme.colors.onPrimary,
                 modifier = Modifier
                     .align(CenterEnd)
@@ -117,7 +124,7 @@ fun PlayerScreen(
         ) {
             val uiStateLocal = uiState.value
             if (uiStateLocal !is UiState.Success ||
-                uiStateLocal.trackList.isNullOrEmpty()
+                uiStateLocal.data.isNullOrEmpty()
             ) return@AudioControl // todo handle ui state
             viewModel.playPauseToggle()
         }

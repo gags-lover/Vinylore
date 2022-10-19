@@ -136,15 +136,15 @@ class AudioViewModel(
         viewModelScope.launch {
             uiState.collect { state ->
                 delay(1000L)
-                if (state !is UiState.Success || state.trackList.isNullOrEmpty() || !isConnected.value) return@collect
-                serviceConnection.prepareMedia(state.trackList)
+                if (state !is UiState.Success || state.data.isNullOrEmpty() || !isConnected.value) return@collect
+                serviceConnection.prepareMedia(state.data)
             }
         }
     }
 
     fun playPauseToggle() {
         val uiState = uiState.value
-        if (uiState !is UiState.Success || uiState.trackList == null) return // todo handle some error message
+        if (uiState !is UiState.Success || uiState.data == null) return // todo handle some error message
 
         if (playerState.value == PlayerState.IDLE) {
             serviceConnection.launchPlayer()

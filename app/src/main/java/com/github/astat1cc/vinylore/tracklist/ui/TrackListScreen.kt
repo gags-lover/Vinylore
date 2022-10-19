@@ -30,11 +30,11 @@ fun TrackListScreen(
         is UiState.Success -> {
             val successState = uiState.value as? UiState.Success ?: return // todo
             Box(
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier.fillMaxWidth(),
                 contentAlignment = Alignment.Center
             ) {
                 when {
-                    successState.trackList == null -> {
+                    successState.data == null -> {
                         ChoseDirectoryView(
                             messageText = stringResource(id = R.string.you_should_chose_dir),
                             buttonText = stringResource(id = R.string.chose_dir),
@@ -43,7 +43,7 @@ fun TrackListScreen(
                             }
                         )
                     }
-                    successState.trackList.isEmpty() -> {
+                    successState.data.isEmpty() -> {
                         Text(text = stringResource(id = R.string.dir_is_empty))
                     }
                     else -> {
@@ -53,7 +53,7 @@ fun TrackListScreen(
                             horizontalArrangement = Arrangement.Center,
                             contentPadding = PaddingValues(start = 8.dp, end = 24.dp)
                         ) {
-                            items(successState.trackList) { album ->
+                            items(successState.data) { album ->
                                 AlbumView(album, onClick = { albumId ->
                                     navController.navigate("${NavigationTree.Player.name}/$albumId")
                                 })
@@ -73,7 +73,7 @@ fun TrackListScreen(
 
                 ChoseDirectoryView(
                     messageText = failState.message,
-                    buttonText = stringResource(id = R.string.try_again),
+                    buttonText = stringResource(R.string.try_again),
                     dirChosenListener = { chosenUri ->
                         viewModel.handleChosenDirUri(chosenUri)
                     }

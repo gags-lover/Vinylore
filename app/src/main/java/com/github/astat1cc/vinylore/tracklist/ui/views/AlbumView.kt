@@ -11,6 +11,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -27,11 +28,10 @@ fun AlbumView(
     MaterialTheme {
         Column(
             modifier = Modifier
-                .padding(start = 16.dp)
+                .padding(start = 16.dp, top = 8.dp, bottom = 8.dp)
                 .clip(RoundedCornerShape(16.dp))
                 .clickable {
-//                    onClick("fake album uri") // todo handle not first track
-                    onClick(album.id.toString()) // todo handle not first track
+                    onClick(album.id.toString())
                 },
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
@@ -48,7 +48,8 @@ fun AlbumView(
                 text = album.name ?: stringResource(id = R.string.unknown_name),
                 maxLines = 2,
                 modifier = Modifier.width(100.dp),
-                textAlign = TextAlign.Center
+                textAlign = TextAlign.Center,
+                color = Color.White
             )
         }
     }

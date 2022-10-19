@@ -20,6 +20,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.navigation.NavHostController
 import com.github.astat1cc.vinylore.R
+import com.github.astat1cc.vinylore.core.theme.matteBlack
 import com.github.astat1cc.vinylore.player.ui.AudioViewModel
 import com.github.astat1cc.vinylore.player.ui.tonearm.TonearmAnimated
 import com.github.astat1cc.vinylore.tracklist.ui.models.UiState
@@ -63,7 +64,7 @@ fun PlayerScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.DarkGray)
+            .background(matteBlack)
     ) {
         Box(
             modifier = Modifier
@@ -99,7 +100,7 @@ fun PlayerScreen(
             )
             TonearmAnimated(
                 modifier = Modifier
-                    .height(size)
+//                    .height(size)
                     .padding(end = 16.dp),
                 tonearmState = tonearmAnimationState.value,
                 tonearmTransition = { oldState ->

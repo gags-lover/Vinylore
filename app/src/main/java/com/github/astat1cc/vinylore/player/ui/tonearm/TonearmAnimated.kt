@@ -2,8 +2,10 @@ package com.github.astat1cc.vinylore.player.ui.tonearm
 
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
@@ -68,10 +70,10 @@ fun TonearmAnimated(
         modifier = modifier
             .graphicsLayer(
                 transformOrigin = TransformOrigin(
-                    pivotFractionX = 0.5f,
-                    pivotFractionY = 0.1f,
+                    pivotFractionX = 0.75f,
+                    pivotFractionY = 0.25f,
                 ),
-                rotationZ = rotation.value,
+                rotationZ = currentRotation,
             ),
         painter = painterResource(R.drawable.tonearm),
         contentScale = ContentScale.FillWidth,

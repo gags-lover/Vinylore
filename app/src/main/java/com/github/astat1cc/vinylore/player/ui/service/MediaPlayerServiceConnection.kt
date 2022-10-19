@@ -8,6 +8,7 @@ import android.support.v4.media.session.MediaControllerCompat
 import android.support.v4.media.session.PlaybackStateCompat
 import com.github.astat1cc.vinylore.Consts
 import com.github.astat1cc.vinylore.core.models.ui.AudioTrackUi
+import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 
 class MediaPlayerServiceConnection(
@@ -25,6 +26,9 @@ class MediaPlayerServiceConnection(
 
     private val _currentPlayingAudio = MutableStateFlow<AudioTrackUi?>(null)
     val currentPlayingAudio = _currentPlayingAudio.asStateFlow()
+
+    private val job = SupervisorJob()
+    private val connectionScope = CoroutineScope(Dispatchers.Main + job)
 
     private lateinit var mediaController: MediaControllerCompat
 
@@ -47,28 +51,40 @@ class MediaPlayerServiceConnection(
         get() = mediaController.transportControls
 
     fun slowPause() {
+        if (_playerState.value != PlayerState.PLAYING) return
         mediaBrowser.sendCustomAction(Consts.PAUSE_MEDIA_PLAY_ACTION, null, null)
         _playerState.value = PlayerState.PAUSED
     }
 
     fun slowResume() {
+        if (_playerState.value != PlayerState.PAUSED) return
         mediaBrowser.sendCustomAction(Consts.RESUME_MEDIA_PLAY_ACTION, null, null)
         _playerState.value = PlayerState.PLAYING
     }
 
-    fun startPlaying(tracks: List<AudioTrackUi>) {
+    fun prepareMedia(tracks: List<AudioTrackUi>) {
         trackList = tracks
         mediaBrowser.sendCustomAction(
-            Consts.START_MEDIA_PLAY_ACTION,
+            Consts.PREPARE_MEDIA_ACTION,
             null,
             null
         ) // todo if i need this?
-        val trackToPlay = trackList.first()
-        transportControl.playFromMediaId(
+        val trackToPlay = trackList[0]
+        transportControl.prepareFromMediaId(
             trackToPlay.uri.toString(),
             null
         )
+    }
+
+    fun launchPlayer() {
         _playerState.value = PlayerState.LAUNCHING
+        connectionScope.launch {
+            delay(3200L)
+            mediaBrowser.sendCustomAction(Consts.START_CRACKLE_ACTION, null, null)
+            delay(2500L)
+            mediaBrowser.sendCustomAction(Consts.START_TRACK_PLAYING_ACTION, null, null)
+            _playerState.value = PlayerState.PLAYING
+        }
     }
 
     fun fastForward(seconds: Int = 10) {

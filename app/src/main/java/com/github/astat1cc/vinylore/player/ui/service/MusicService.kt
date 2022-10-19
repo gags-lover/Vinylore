@@ -2,6 +2,7 @@ package com.github.astat1cc.vinylore.player.ui.service
 
 import android.app.PendingIntent
 import android.content.Intent
+import android.media.audiofx.Equalizer
 import android.net.Uri
 import android.os.Bundle
 import android.os.ResultReceiver
@@ -9,7 +10,6 @@ import android.support.v4.media.MediaBrowserCompat
 import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.MediaSessionCompat
 import android.support.v4.media.session.PlaybackStateCompat
-import android.util.Log
 import android.widget.Toast
 import androidx.media.MediaBrowserServiceCompat
 import com.github.astat1cc.vinylore.Consts
@@ -131,53 +131,65 @@ class MusicService : MediaBrowserServiceCompat() {
         super.onCustomAction(action, extras, result)
 
         when (action) {
-            Consts.RESUME_MEDIA_PLAY_ACTION -> {
-                serviceScope.launch {
-                    crackleExoPLayer.playWhenReady = true
-                    trackExoPlayer.playWhenReady = true
-                    var currentSpeed = 0.1f
-                    while (currentSpeed < 1) {
-                        currentSpeed += 0.1f
-                        trackExoPlayer.playbackParameters =
-                            PlaybackParameters(
-                                currentSpeed,
-                                0.8f + currentSpeed / 10
-                            )
-                        trackExoPlayer.volume = currentSpeed * 2f
-                        delay(100L)
-                    }
-                    trackExoPlayer.playbackParameters = PlaybackParameters(1f, 1f)
-                }
-            }
-            Consts.PAUSE_MEDIA_PLAY_ACTION -> {
-                serviceScope.launch {
-                    var currentSpeed = 1f
-                    while (currentSpeed > 0.11) {
-                        currentSpeed -= 0.1f
-                        trackExoPlayer.playbackParameters =
-                            PlaybackParameters(
-                                currentSpeed,
-                                0.8f + currentSpeed / 10
-                            )
-                        trackExoPlayer.volume = currentSpeed * 1.2f
-                        delay(100L)
-                    }
-                    trackExoPlayer.playWhenReady = false
-                    crackleExoPLayer.playWhenReady = false
-
-                    // because it seems that app saves params even after closing app
-                    trackExoPlayer.playbackParameters = PlaybackParameters(1f, 1f)
-                    trackExoPlayer.volume = 1f
-                }
-            }
-            Consts.START_MEDIA_PLAY_ACTION -> {
-                musicNotificationManager.showNotification(trackExoPlayer)
-            }
+            Consts.START_CRACKLE_ACTION -> startCrackle()
+            Consts.START_TRACK_PLAYING_ACTION -> startTrackPlaying()
+            Consts.RESUME_MEDIA_PLAY_ACTION -> slowlyResume()
+            Consts.PAUSE_MEDIA_PLAY_ACTION -> slowlyPause()
+            Consts.PREPARE_MEDIA_ACTION -> musicNotificationManager.showNotification(trackExoPlayer)
             Consts.REFRESH_MEDIA_PLAY_ACTION -> {
                 mediaSource.refresh()
                 notifyChildrenChanged(MY_MEDIA_ROOT_ID)
             }
             else -> Unit
+        }
+    }
+
+    private fun startTrackPlaying() {
+        trackExoPlayer.playWhenReady = true
+    }
+
+    private fun startCrackle() {
+        crackleExoPLayer.playWhenReady = true
+    }
+
+    private fun slowlyPause() {
+        serviceScope.launch {
+            var currentSpeed = 1f
+            while (currentSpeed > 0.11) {
+                currentSpeed -= 0.1f
+                trackExoPlayer.playbackParameters =
+                    PlaybackParameters(
+                        currentSpeed,
+                        0.8f + currentSpeed / 10
+                    )
+                trackExoPlayer.volume = currentSpeed * 1.2f
+                delay(100L)
+            }
+            trackExoPlayer.playWhenReady = false
+            crackleExoPLayer.playWhenReady = false
+
+            // because it seems that app saves params even after closing app
+            trackExoPlayer.playbackParameters = PlaybackParameters(1f, 1f)
+            trackExoPlayer.volume = 1f
+        }
+    }
+
+    private fun slowlyResume() {
+        serviceScope.launch {
+            crackleExoPLayer.playWhenReady = true
+            trackExoPlayer.playWhenReady = true
+            var currentSpeed = 0.1f
+            while (currentSpeed < 1) {
+                currentSpeed += 0.1f
+                trackExoPlayer.playbackParameters =
+                    PlaybackParameters(
+                        currentSpeed,
+                        0.8f + currentSpeed / 10
+                    )
+                trackExoPlayer.volume = currentSpeed * 2f
+                delay(100L)
+            }
+            trackExoPlayer.playbackParameters = PlaybackParameters(1f, 1f)
         }
     }
 
@@ -255,6 +267,7 @@ class MusicService : MediaBrowserServiceCompat() {
                         addListener(PlayerEventListener())
                         setMediaSource(mediaSource.trackMediaSource(dataSourceFactory))
                         prepare()
+                        this.playWhenReady = playWhenReady
 //                    seekTo(indexToPlay, 0)
                     }
                 }
@@ -264,14 +277,9 @@ class MusicService : MediaBrowserServiceCompat() {
                         setMediaSource(mediaSource.crackleMediaSource(dataSourceFactory))
                         repeatMode = Player.REPEAT_MODE_ONE
                         prepare()
+                        this.playWhenReady = playWhenReady
                     }
                 }
-                delay(3200L)
-                crackleExoPLayer.playWhenReady = playWhenReady
-                delay(2500L)
-                joinAll(trackPlayerPreparing, cracklePlayerPreparing)
-
-                trackExoPlayer.playWhenReady = playWhenReady
             }
         }
 

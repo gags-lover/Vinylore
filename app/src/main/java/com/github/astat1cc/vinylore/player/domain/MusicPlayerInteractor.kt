@@ -30,19 +30,30 @@ interface MusicPlayerInteractor {
         }
 
         override fun fetchTrackList(): Flow<FetchResult<List<AppAudioTrack>>> = flow {
+            var prevResult: FetchResult<List<AppAudioTrack>>? = null
             while (true) {
                 try {
                     val albumIdToFetch = playerRepository.getLastPlayingAlbumId()
                     val trackList = trackListRepository.fetchAlbums()?.find { album ->
                         album.id == albumIdToFetch
                     }?.trackList
-                    emit(
-                        FetchResult.Success(data = trackList) // todo maybe refresh just manually
-                    )
+                    val newResult = FetchResult.Success(data = trackList)
+                    if (prevResult != newResult) {
+                        prevResult = newResult
+                        emit(
+                            prevResult // todo maybe refresh just manually
+                        )
+                    }
+
                 } catch (e: Exception) {
-                    emit(
-                        FetchResult.Fail(error = errorHandler.getErrorTypeOf(e))
-                    )
+                    val newResult =
+                        FetchResult.Fail<List<AppAudioTrack>>(error = errorHandler.getErrorTypeOf(e))
+                    if (prevResult != newResult) {
+                        prevResult = newResult
+                        emit(
+                            prevResult // todo maybe refresh just manually
+                        )
+                    }
                 }
                 delay(750L) // todo maybe finally?
             }

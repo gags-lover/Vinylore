@@ -39,11 +39,12 @@ fun ApplicationScreen() {
         ) { backStackEntry ->
             PlayerScreen(
                 navController,
-                backStackEntry.arguments?.getString(PLAYER_ARG)?.toInt() ?: LAST_OPENED_ALBUM_ID
+                backStackEntry.arguments?.getString(PLAYER_ARG)?.toInt()
+                    ?: LAST_OPENED_ALBUM_ID.toInt()
             )
         }
     }
 }
 
-const val LAST_OPENED_ALBUM_ID = -1
+const val LAST_OPENED_ALBUM_ID = "-1"
 const val PLAYER_ARG = "player_arg"

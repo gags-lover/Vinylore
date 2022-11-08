@@ -36,11 +36,16 @@ fun PlayerScreen(
     viewModel: AudioViewModel = getViewModel(),
     lifecycleOwner: LifecycleOwner = LocalLifecycleOwner.current
 ) {
-    if (albumId != LAST_OPENED_ALBUM_ID) viewModel.saveCurrentPlayingAlbumId(albumId)
+    if (albumId != LAST_OPENED_ALBUM_ID.toInt()) viewModel.saveCurrentPlayingAlbumId(albumId)
 
     val uiState = viewModel.uiState.collectAsState()
     val discAnimationState = viewModel.playerAnimationState.collectAsState()
     val tonearmAnimationState = viewModel.tonearmAnimationState.collectAsState()
+
+    val localState = uiState.value
+    if (localState is UiState.Success && localState.data?.discChosen == false) {
+        navController.navigate(NavigationTree.TrackList.name)
+    }
 
     DisposableEffect(lifecycleOwner) {
         val visibilityObserver = LifecycleEventObserver { _, event ->
@@ -124,7 +129,7 @@ fun PlayerScreen(
         ) {
             val uiStateLocal = uiState.value
             if (uiStateLocal !is UiState.Success ||
-                uiStateLocal.data.isNullOrEmpty()
+                uiStateLocal.data?.trackList.isNullOrEmpty()
             ) return@AudioControl // todo handle ui state
             viewModel.playPauseToggle()
         }

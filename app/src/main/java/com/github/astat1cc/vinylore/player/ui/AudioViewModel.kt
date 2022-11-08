@@ -12,6 +12,7 @@ import com.github.astat1cc.vinylore.core.models.domain.AppAudioTrack
 import com.github.astat1cc.vinylore.core.models.domain.FetchResult
 import com.github.astat1cc.vinylore.core.models.ui.AudioTrackUi
 import com.github.astat1cc.vinylore.player.domain.MusicPlayerInteractor
+import com.github.astat1cc.vinylore.player.ui.models.PlayerScreenUiStateData
 import com.github.astat1cc.vinylore.player.ui.service.*
 import com.github.astat1cc.vinylore.player.ui.tonearm.TonearmState
 import com.github.astat1cc.vinylore.player.ui.vinyl.VinylDiscState
@@ -26,7 +27,7 @@ class AudioViewModel(
     serviceConnection: MediaPlayerServiceConnection
 ) : ViewModel() {
 
-    val uiState: StateFlow<UiState<List<AudioTrackUi>>> =
+    val uiState: StateFlow<UiState<PlayerScreenUiStateData>> =
         // todo it's collecting the same value every time, fix this
         interactor.fetchTrackList()
             .map { fetchResult -> fetchResult.toUiState() }
@@ -135,9 +136,17 @@ class AudioViewModel(
         }
         viewModelScope.launch {
             uiState.collect { state ->
-                delay(1000L)
-                if (state !is UiState.Success || state.data.isNullOrEmpty() || !isConnected.value) return@collect
-                serviceConnection.prepareMedia(state.data)
+                if (state !is UiState.Success) return@collect
+                var preparationCalled = false
+                while (!preparationCalled) {
+                    if (!state.data!!.trackList.isNullOrEmpty() &&
+                        isConnected.value
+                    ) {
+                        serviceConnection.prepareMedia(state.data.trackList!!)
+                        preparationCalled = true
+                    }
+                    delay(1000L)
+                }
             }
         }
     }
@@ -194,13 +203,18 @@ class AudioViewModel(
         interactor.saveLastPlayingAlbum(albumId)
     }
 
-    private fun FetchResult<List<AppAudioTrack>>.toUiState(): UiState<List<AudioTrackUi>> =
+    private fun FetchResult<List<AppAudioTrack>>.toUiState(): UiState<PlayerScreenUiStateData> =
         when (this) {
             is FetchResult.Success -> {
+                val trackList = data?.map { trackDomain ->
+                    AudioTrackUi.fromDomain(trackDomain)
+                }
+                val discChosen = !trackList.isNullOrEmpty()
                 UiState.Success(
-                    data?.map { trackDomain ->
-                        AudioTrackUi.fromDomain(trackDomain)
-                    }
+                    PlayerScreenUiStateData(
+                        trackList = trackList,
+                        discChosen = discChosen
+                    )
                 )
             }
             is FetchResult.Fail -> {

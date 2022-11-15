@@ -4,17 +4,12 @@ import com.github.astat1cc.vinylore.core.database.AppDatabase
 import com.github.astat1cc.vinylore.player.data.MusicPlayerRepositoryImpl
 import com.github.astat1cc.vinylore.player.domain.MusicPlayerInteractor
 import com.github.astat1cc.vinylore.player.domain.MusicPlayerRepository
-import com.github.astat1cc.vinylore.player.ui.AudioViewModel
+import com.github.astat1cc.vinylore.player.ui.PlayerScreenViewModel
 import com.github.astat1cc.vinylore.player.ui.service.MediaPlayerServiceConnection
 import com.github.astat1cc.vinylore.player.ui.service.MusicMediaSource
 import com.google.android.exoplayer2.*
 import com.google.android.exoplayer2.audio.AudioAttributes
 import com.google.android.exoplayer2.database.StandaloneDatabaseProvider
-import com.google.android.exoplayer2.trackselection.AdaptiveTrackSelection
-import com.google.android.exoplayer2.trackselection.DefaultTrackSelector
-import com.google.android.exoplayer2.trackselection.DefaultTrackSelector.ParametersBuilder
-import com.google.android.exoplayer2.trackselection.TrackSelection
-import com.google.android.exoplayer2.trackselection.TrackSelector
 import com.google.android.exoplayer2.upstream.DataSource
 import com.google.android.exoplayer2.upstream.DefaultDataSource
 import com.google.android.exoplayer2.upstream.cache.CacheDataSource
@@ -70,13 +65,13 @@ val playerModule = module {
     single<MusicPlayerInteractor> {
         MusicPlayerInteractor.Impl(
             playerRepository = get(),
-            trackListRepository = get(),
+            commonRepository = get(),
             dispatchers = get(),
             errorHandler = get()
         )
     }
     viewModel {
-        AudioViewModel(
+        PlayerScreenViewModel(
             interactor = get(),
             serviceConnection = get(),
             errorHandler = get()

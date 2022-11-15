@@ -7,6 +7,7 @@ import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.MediaControllerCompat
 import android.support.v4.media.session.PlaybackStateCompat
 import com.github.astat1cc.vinylore.Consts
+import com.github.astat1cc.vinylore.core.models.ui.AlbumUi
 import com.github.astat1cc.vinylore.core.models.ui.AudioTrackUi
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
@@ -27,6 +28,9 @@ class MediaPlayerServiceConnection(
     private val _currentPlayingAudio = MutableStateFlow<AudioTrackUi?>(null)
     val currentPlayingAudio = _currentPlayingAudio.asStateFlow()
 
+    private val _playingAlbum = MutableStateFlow<AlbumUi?>(null)
+    val playingAlbum: StateFlow<AlbumUi?> = _playingAlbum.asStateFlow()
+
     private val job = SupervisorJob()
     private val connectionScope = CoroutineScope(Dispatchers.Main + job)
 
@@ -41,8 +45,6 @@ class MediaPlayerServiceConnection(
     ).apply {
         connect()
     }
-
-    private var trackList = listOf<AudioTrackUi>()
 
     val rootMediaId: String
         get() = mediaBrowser.root
@@ -62,14 +64,14 @@ class MediaPlayerServiceConnection(
         _playerState.value = PlayerState.PLAYING
     }
 
-    fun prepareMedia(tracks: List<AudioTrackUi>) {
-        trackList = tracks
+    fun prepareMedia(album: AlbumUi) {
+        _playingAlbum.value = album
         mediaBrowser.sendCustomAction(
             Consts.PREPARE_MEDIA_ACTION,
             null,
             null
         ) // todo if i need this?
-        val trackToPlay = trackList[0]
+        val trackToPlay = playingAlbum.value!!.trackList[0]
         transportControl.prepareFromMediaId(
             trackToPlay.uri.toString(),
             null
@@ -153,7 +155,7 @@ class MediaPlayerServiceConnection(
             super.onMetadataChanged(metadata)
 
             _currentPlayingAudio.value = metadata?.let {
-                trackList.find { track ->
+                playingAlbum.value?.trackList?.find { track ->
                     track.uri == metadata.description.mediaUri
                 }
             }

@@ -48,7 +48,7 @@ class MusicMediaSource(
             interactor.fetchTrackList().collect { fetchResult ->
                 if (fetchResult !is FetchResult.Success || fetchResult.data == null) return@collect
                 val trackListUi =
-                    fetchResult.data.map { trackDomain -> AudioTrackUi.fromDomain(trackDomain) }
+                    fetchResult.data.trackList.map { trackDomain -> AudioTrackUi.fromDomain(trackDomain) }
                 audioMediaMetadata = trackListUi.map { track ->
                     MediaMetadataCompat.Builder()
                         .putString(MediaMetadataCompat.METADATA_KEY_MEDIA_ID, track.uri.toString())

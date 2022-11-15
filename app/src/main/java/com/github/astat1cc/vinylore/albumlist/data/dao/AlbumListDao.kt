@@ -1,4 +1,4 @@
-package com.github.astat1cc.vinylore.tracklist.data.dao
+package com.github.astat1cc.vinylore.albumlist.data.dao
 
 import androidx.room.Dao
 import androidx.room.Insert
@@ -6,8 +6,8 @@ import androidx.room.OnConflictStrategy
 import com.github.astat1cc.vinylore.core.models.data.AudioTrackDb
 
 @Dao
-interface TrackListDao {
+interface AlbumListDao {
 
     @Insert(entity = AudioTrackDb::class, onConflict = OnConflictStrategy.REPLACE)
-    suspend fun saveTrackList(trackList: List<AudioTrackDb>)
+    suspend fun saveAlbums(albums: List<AudioTrackDb>)
 }

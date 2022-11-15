@@ -8,23 +8,25 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.github.astat1cc.vinylore.Consts
 import com.github.astat1cc.vinylore.core.AppErrorHandler
+import com.github.astat1cc.vinylore.core.models.domain.AppAlbum
 import com.github.astat1cc.vinylore.core.models.domain.AppAudioTrack
 import com.github.astat1cc.vinylore.core.models.domain.FetchResult
+import com.github.astat1cc.vinylore.core.models.ui.AlbumUi
 import com.github.astat1cc.vinylore.core.models.ui.AudioTrackUi
 import com.github.astat1cc.vinylore.player.domain.MusicPlayerInteractor
 import com.github.astat1cc.vinylore.player.ui.models.PlayerScreenUiStateData
 import com.github.astat1cc.vinylore.player.ui.service.*
 import com.github.astat1cc.vinylore.player.ui.tonearm.TonearmState
 import com.github.astat1cc.vinylore.player.ui.vinyl.VinylDiscState
-import com.github.astat1cc.vinylore.tracklist.ui.models.UiState
+import com.github.astat1cc.vinylore.core.models.ui.UiState
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
-class AudioViewModel(
+class PlayerScreenViewModel(
     private val interactor: MusicPlayerInteractor,
     private val errorHandler: AppErrorHandler,
-    serviceConnection: MediaPlayerServiceConnection
+    private val serviceConnection: MediaPlayerServiceConnection
 ) : ViewModel() {
 
     val uiState: StateFlow<UiState<PlayerScreenUiStateData>> =
@@ -78,11 +80,8 @@ class AudioViewModel(
         }
     }
 
-    private val serviceConnection = serviceConnection.also {
-        updatePlayback()
-    }
-
     init {
+        updatePlayback()
         viewModelScope.launch {
             playerState.collect { state ->
                 when (state) {
@@ -139,10 +138,10 @@ class AudioViewModel(
                 if (state !is UiState.Success) return@collect
                 var preparationCalled = false
                 while (!preparationCalled) {
-                    if (!state.data!!.trackList.isNullOrEmpty() &&
+                    if (state.data.album != null &&
                         isConnected.value
                     ) {
-                        serviceConnection.prepareMedia(state.data.trackList!!)
+                        serviceConnection.prepareMedia(state.data.album)
                         preparationCalled = true
                     }
                     delay(1000L)
@@ -153,7 +152,7 @@ class AudioViewModel(
 
     fun playPauseToggle() {
         val uiState = uiState.value
-        if (uiState !is UiState.Success || uiState.data == null) return // todo handle some error message
+        if (uiState !is UiState.Success) return // todo handle some error message
 
         if (playerState.value == PlayerState.IDLE) {
             serviceConnection.launchPlayer()
@@ -199,20 +198,14 @@ class AudioViewModel(
         }
     }
 
-    fun saveCurrentPlayingAlbumId(albumId: Int) = viewModelScope.launch {
-        interactor.saveLastPlayingAlbum(albumId)
-    }
-
-    private fun FetchResult<List<AppAudioTrack>>.toUiState(): UiState<PlayerScreenUiStateData> =
+    private fun FetchResult<AppAlbum?>.toUiState(): UiState<PlayerScreenUiStateData> =
         when (this) {
             is FetchResult.Success -> {
-                val trackList = data?.map { trackDomain ->
-                    AudioTrackUi.fromDomain(trackDomain)
-                }
-                val discChosen = !trackList.isNullOrEmpty()
+                val album = if (data == null) data else AlbumUi.fromDomain(data)
+                val discChosen = album != null
                 UiState.Success(
                     PlayerScreenUiStateData(
-                        trackList = trackList,
+                        album = album,
                         discChosen = discChosen
                     )
                 )

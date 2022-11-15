@@ -1,48 +1,34 @@
 package com.github.astat1cc.vinylore.tracklist.ui
 
-import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.github.astat1cc.vinylore.core.AppErrorHandler
-import com.github.astat1cc.vinylore.core.DispatchersProvider
-import com.github.astat1cc.vinylore.core.models.domain.AppAlbum
-import com.github.astat1cc.vinylore.core.models.domain.FetchResult
+import com.github.astat1cc.vinylore.core.models.domain.ErrorType
 import com.github.astat1cc.vinylore.core.models.ui.AlbumUi
-import com.github.astat1cc.vinylore.tracklist.domain.TrackListScreenInteractor
-import com.github.astat1cc.vinylore.tracklist.ui.models.UiState
+import com.github.astat1cc.vinylore.core.models.ui.UiState
+import com.github.astat1cc.vinylore.player.ui.service.MediaPlayerServiceConnection
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.launch
 
 class TrackListScreenViewModel(
-    private val interactor: TrackListScreenInteractor,
-    private val dispatchers: DispatchersProvider,
-    private val errorHandler: AppErrorHandler
+    private val errorHandler: AppErrorHandler,
+    serviceConnection: MediaPlayerServiceConnection
 ) : ViewModel() {
 
-    val uiState: StateFlow<UiState<List<AlbumUi>>> = interactor.fetchAlbums()
-        .map { fetchResult -> fetchResult.toUiState() }
-        .stateIn(viewModelScope, SharingStarted.Lazily, UiState.Loading())
-
-    fun handleChosenDirUri(uri: Uri) = viewModelScope.launch(dispatchers.io()) {
-        interactor.saveChosenDirectoryPath(uri.toString())
-    }
-
-    private fun FetchResult<List<AppAlbum>>.toUiState(): UiState<List<AlbumUi>> =
-        when (this) {
-            is FetchResult.Success -> {
-                UiState.Success(
-                    data?.map { albumDomain ->
-                        AlbumUi.fromDomain(albumDomain)
-                    }
-                )
+    val uiState: StateFlow<UiState<AlbumUi>> =
+        serviceConnection.playingAlbum.map { album ->
+            when {
+                album == null -> {
+                    UiState.Fail(message = errorHandler.getErrorMessage(ErrorType.ALBUM_IS_NOT_CHOSEN))
+                }
+                album.trackList.isEmpty() -> {
+                    UiState.Fail(message = errorHandler.getErrorMessage(ErrorType.DIR_IS_EMPTY))
+                }
+                else -> {
+                    UiState.Success(album)
+                }
             }
-            is FetchResult.Fail -> {
-                UiState.Fail(
-                    message = errorHandler.getErrorMessage(error)
-                )
-            }
-        }
+        }.stateIn(viewModelScope, SharingStarted.Lazily, UiState.Loading())
 }

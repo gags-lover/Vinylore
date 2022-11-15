@@ -12,4 +12,5 @@
     <string name="you_should_chose_dir">You should chose directory where your files placed.</string>
     <string name="chose_dir">Chose directory</string>
     <string name="dir_is_empty">Directory is empty. Add some media</string>
+    <string name="album_is_not_chosen">Album is not chosen</string>
 </resources>

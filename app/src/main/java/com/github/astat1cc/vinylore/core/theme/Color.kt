@@ -13,5 +13,6 @@ val lightPalette = Colors(
     primaryBackground = Color.White,
     primaryButtonColor = Color.Black,
     primaryButtonTextColor = Color.White,
-    headerTextColor = Color.Black
+    headerTextColor = Color.Black,
+
 )

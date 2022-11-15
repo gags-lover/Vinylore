@@ -9,6 +9,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.dialog
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.github.astat1cc.vinylore.albumlist.ui.AlbumListScreen
 import com.github.astat1cc.vinylore.navigation.NavigationTree
 import com.github.astat1cc.vinylore.player.ui.PlayerScreen
 import com.github.astat1cc.vinylore.tracklist.ui.TrackListScreen
@@ -21,30 +22,24 @@ fun ApplicationScreen() {
 
     NavHost(
         navController = navController,
-        startDestination = "${NavigationTree.Player.name}/{$PLAYER_ARG}"
+        startDestination = NavigationTree.Player.name
     ) {
         dialog(
-            NavigationTree.TrackList.name,
+            route = NavigationTree.AlbumList.name,
             dialogProperties = DialogProperties(
                 dismissOnClickOutside = true,
                 usePlatformDefaultWidth = false
             )
-        ) { TrackListScreen(navController) }
-        composable(
-            route = "${NavigationTree.Player.name}/{$PLAYER_ARG}",
-            arguments = listOf(navArgument(PLAYER_ARG) {
-                type = NavType.StringType
-                defaultValue = LAST_OPENED_ALBUM_ID
-            })
-        ) { backStackEntry ->
-            PlayerScreen(
-                navController,
-                backStackEntry.arguments?.getString(PLAYER_ARG)?.toInt()
-                    ?: LAST_OPENED_ALBUM_ID.toInt()
-            )
+        ) { AlbumListScreen(navController) }
+        composable(route = NavigationTree.Player.name) {
+            PlayerScreen(navController)
+        }
+        composable(route = NavigationTree.TrackList.name) {
+            TrackListScreen(navController = navController)
         }
     }
 }
 
 const val LAST_OPENED_ALBUM_ID = "-1"
-const val PLAYER_ARG = "player_arg"
+const val PLAYER_SCREEN_ARG = "player_arg"
+const val TRACK_LIST_SCREEN_ARG = "track_list_arg"

@@ -1,4 +1,4 @@
-package com.github.astat1cc.vinylore.tracklist.ui.views
+package com.github.astat1cc.vinylore.albumlist.ui.views
 
 import android.content.Intent
 import android.net.Uri

@@ -1,8 +1,8 @@
-package com.github.astat1cc.vinylore.tracklist.domain
+package com.github.astat1cc.vinylore.albumlist.domain
 
 import com.github.astat1cc.vinylore.core.AppErrorHandler
 import com.github.astat1cc.vinylore.core.DispatchersProvider
-import com.github.astat1cc.vinylore.core.common_tracklist.domain.TrackListCommonRepository
+import com.github.astat1cc.vinylore.core.common_tracklist.domain.CommonRepository
 import com.github.astat1cc.vinylore.core.models.domain.AppAlbum
 import com.github.astat1cc.vinylore.core.models.domain.FetchResult
 import kotlinx.coroutines.delay
@@ -10,30 +10,38 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.withContext
 
-interface TrackListScreenInteractor {
+interface AlbumListScreenInteractor {
 
     suspend fun saveChosenDirectoryPath(dirPath: String)
 
-    fun fetchAlbums(): Flow<FetchResult<List<AppAlbum>>>
+    suspend fun saveChosenPlayingAlbum(albumId: Int)
+
+    fun fetchAlbums(): Flow<FetchResult<List<AppAlbum>?>>
 
     class Impl(
         private val dispatchers: DispatchersProvider,
-        private val trackListScreenRepository: TrackListScreenRepository,
-        private val trackListCommonRepository: TrackListCommonRepository,
+        private val albumListScreenRepository: AlbumListScreenRepository,
+        private val commonRepository: CommonRepository,
         private val errorHandler: AppErrorHandler
-    ) : TrackListScreenInteractor {
+    ) : AlbumListScreenInteractor {
 
         override suspend fun saveChosenDirectoryPath(dirPath: String) {
             withContext(dispatchers.io()) {
-                trackListScreenRepository.saveChosenDirectoryPath(dirPath)
+                albumListScreenRepository.saveChosenDirectoryPath(dirPath)
             }
         }
 
-        override fun fetchAlbums(): Flow<FetchResult<List<AppAlbum>>> = flow {
+        override suspend fun saveChosenPlayingAlbum(albumId: Int) {
+            withContext(dispatchers.io()) {
+                albumListScreenRepository.saveChosenPlayingAlbumId(albumId)
+            }
+        }
+
+        override fun fetchAlbums(): Flow<FetchResult<List<AppAlbum>?>> = flow {
             while (true) {
                 try {
                     emit(
-                        FetchResult.Success(data = trackListCommonRepository.fetchAlbums()) // todo maybe refresh just manually
+                        FetchResult.Success(data = commonRepository.fetchAlbums()) // todo maybe refresh just manually
                     )
                 } catch (e: Exception) {
                     emit(

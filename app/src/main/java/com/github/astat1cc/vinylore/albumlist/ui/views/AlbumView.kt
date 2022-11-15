@@ -1,4 +1,4 @@
-package com.github.astat1cc.vinylore.tracklist.ui.views
+package com.github.astat1cc.vinylore.albumlist.ui.views
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
@@ -23,7 +23,7 @@ import com.github.astat1cc.vinylore.core.models.ui.AlbumUi
 @Composable
 fun AlbumView(
     album: AlbumUi,
-    onClick: (String) -> Unit
+    onClick: (Int) -> Unit
 ) {
     MaterialTheme {
         Column(
@@ -31,12 +31,12 @@ fun AlbumView(
                 .padding(start = 16.dp, top = 8.dp, bottom = 8.dp)
                 .clip(RoundedCornerShape(16.dp))
                 .clickable {
-                    onClick(album.id.toString())
+                    onClick(album.id)
                 },
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Image(
-                painter = painterResource(R.drawable.vinyl_disc_no_density),
+                painter = painterResource(R.drawable.album),
                 contentDescription = "",
                 modifier = Modifier
                     .width(200.dp)

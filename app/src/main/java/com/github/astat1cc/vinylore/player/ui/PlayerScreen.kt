@@ -21,32 +21,31 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.navigation.NavHostController
 import com.github.astat1cc.vinylore.LAST_OPENED_ALBUM_ID
 import com.github.astat1cc.vinylore.R
-import com.github.astat1cc.vinylore.core.theme.matteBlack
+import com.github.astat1cc.vinylore.core.theme.brown
 import com.github.astat1cc.vinylore.navigation.NavigationTree
 import com.github.astat1cc.vinylore.player.ui.tonearm.TonearmAnimated
 import com.github.astat1cc.vinylore.player.ui.vinyl.compose.AudioControl
 import com.github.astat1cc.vinylore.player.ui.vinyl.compose.VinylAnimated
-import com.github.astat1cc.vinylore.tracklist.ui.models.UiState
+import com.github.astat1cc.vinylore.core.models.ui.UiState
 import org.koin.androidx.compose.getViewModel
 
 @Composable
 fun PlayerScreen(
     navController: NavHostController,
-    albumId: Int,
-    viewModel: AudioViewModel = getViewModel(),
+    viewModel: PlayerScreenViewModel = getViewModel(),
     lifecycleOwner: LifecycleOwner = LocalLifecycleOwner.current
 ) {
-    if (albumId != LAST_OPENED_ALBUM_ID.toInt()) viewModel.saveCurrentPlayingAlbumId(albumId)
-
     val uiState = viewModel.uiState.collectAsState()
     val discAnimationState = viewModel.playerAnimationState.collectAsState()
     val tonearmAnimationState = viewModel.tonearmAnimationState.collectAsState()
 
     val localState = uiState.value
-    if (localState is UiState.Success && localState.data?.discChosen == false) {
-        navController.navigate(NavigationTree.TrackList.name)
+    // open album choosing screen if currently no album is chosen
+    if (localState is UiState.Success && !localState.data.discChosen) {
+        navController.navigate(NavigationTree.AlbumList.name)
     }
 
+    // sending information every time screen is visible or not to decide to show animation or not
     DisposableEffect(lifecycleOwner) {
         val visibilityObserver = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_START) {
@@ -65,20 +64,21 @@ fun PlayerScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(matteBlack)
+            .background(brown)
     ) {
         Box(
             modifier = Modifier.fillMaxWidth()
         ) {
             Icon(
-                painter = painterResource(R.drawable.ic_show_album_list),
+                painter = painterResource(R.drawable.ic_folder),
                 contentDescription = null,
                 tint = MaterialTheme.colors.onPrimary,
                 modifier = Modifier
+                    .padding(start = 4.dp, top = 4.dp)
                     .align(CenterStart)
                     .clip(CircleShape)
                     .clickable(onClick = {
-                        navController.navigate(NavigationTree.TrackList.name)
+                        navController.navigate(NavigationTree.AlbumList.name)
                     })
                     .size(48.dp)
                     .padding(12.dp)
@@ -88,18 +88,17 @@ fun PlayerScreen(
                 contentDescription = null, // todo
                 tint = MaterialTheme.colors.onPrimary,
                 modifier = Modifier
+                    .padding(end = 4.dp, top = 4.dp)
                     .align(CenterEnd)
                     .clip(CircleShape)
                     .clickable(onClick = {
-
+                        navController.navigate(NavigationTree.TrackList.name)
                     })
                     .size(48.dp)
                     .padding(12.dp)
             )
         }
-        Row(
-//            modifier = Modifier.align(Alignment.Start)
-        ) {
+        Row {
             val size = 280.dp
             VinylAnimated(
                 modifier = Modifier
@@ -129,7 +128,7 @@ fun PlayerScreen(
         ) {
             val uiStateLocal = uiState.value
             if (uiStateLocal !is UiState.Success ||
-                uiStateLocal.data?.trackList.isNullOrEmpty()
+                uiStateLocal.data.album == null
             ) return@AudioControl // todo handle ui state
             viewModel.playPauseToggle()
         }

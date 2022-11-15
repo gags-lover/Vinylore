@@ -36,42 +36,29 @@ fun Vinyl(
             .clip(VinylShape())
     ) {
 
-        Box(
-            modifier = Modifier
-//                .padding(4.dp)
-                .padding(6.dp)
-                .clip(CircleShape)
-                .fillMaxSize()
-                .border(width = 4.dp, color = steelGray, shape = CircleShape)
-                .background(Color.Black),
-//            painter = painterResource(id = R.drawable.matte),
-//            contentDescription = null,
-//            contentScale = ContentScale.Crop,
-//            alpha = 0.4f
-        )
+        // Vinyl platter
+//        Box(
+//            modifier = Modifier
+////                .padding(4.dp)
+//                .padding(6.dp)
+//                .clip(CircleShape)
+//                .fillMaxSize()
+//                .border(width = 4.dp, color = steelGray, shape = CircleShape)
+//                .background(Color.Black),
+////            painter = painterResource(id = R.drawable.matte),
+////            contentDescription = null,
+////            contentScale = ContentScale.Crop,
+////            alpha = 0.4f
+//        )
 
         // Vinyl background
         Image(
             modifier = Modifier
-                .padding(6.dp)
                 .fillMaxSize()
-                .shadow(elevation = 16.dp, shape = CircleShape)
                 .rotate(rotationDegrees),
             painter = painterResource(id = R.drawable.vinyl_background),
             contentDescription = ""
         )
-//        Image(
-//            modifier = Modifier
-////                .padding(4.dp)
-//                .padding(6.dp)
-//                .border(width = 6.dp, color = Color.Black, shape = CircleShape)
-//                .padding(0.dp)
-//                .fillMaxSize()
-//                .shadow(elevation = 20.dp, shape = CircleShape)
-//                .rotate(rotationDegrees),
-//            painter = painterResource(id = R.drawable.vinyl_background),
-//            contentDescription = ""
-//        )
 
         // Vinyl lights effect
         Image(
@@ -79,14 +66,14 @@ fun Vinyl(
                 .fillMaxSize(),
             painter = painterResource(id = R.drawable.vinyl_light),
             contentDescription = "",
-            alpha = 0.7f
+            alpha = 0.8f
         )
 
         // Vinyl 'album' cover
         // For using with Coil or Glide, wrap into surface with shape 
         Image(
             modifier = Modifier
-                .fillMaxSize(0.3f)
+                .fillMaxSize(0.4f)
                 .align(Alignment.Center)
                 .rotate(rotationDegrees)
                 .aspectRatio(1.0f)

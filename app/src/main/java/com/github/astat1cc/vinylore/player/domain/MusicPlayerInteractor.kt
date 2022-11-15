@@ -2,7 +2,8 @@ package com.github.astat1cc.vinylore.player.domain
 
 import com.github.astat1cc.vinylore.core.AppErrorHandler
 import com.github.astat1cc.vinylore.core.DispatchersProvider
-import com.github.astat1cc.vinylore.core.common_tracklist.domain.TrackListCommonRepository
+import com.github.astat1cc.vinylore.core.common_tracklist.domain.CommonRepository
+import com.github.astat1cc.vinylore.core.models.domain.AppAlbum
 import com.github.astat1cc.vinylore.core.models.domain.AppAudioTrack
 import com.github.astat1cc.vinylore.core.models.domain.FetchResult
 import kotlinx.coroutines.delay
@@ -12,32 +13,24 @@ import kotlinx.coroutines.withContext
 
 interface MusicPlayerInteractor {
 
-    suspend fun saveLastPlayingAlbum(albumId: Int)
-
-    fun fetchTrackList(): Flow<FetchResult<List<AppAudioTrack>>>
+    fun fetchTrackList(): Flow<FetchResult<AppAlbum?>>
 
     class Impl(
         private val playerRepository: MusicPlayerRepository,
-        private val trackListRepository: TrackListCommonRepository,
+        private val commonRepository: CommonRepository,
         private val dispatchers: DispatchersProvider,
         private val errorHandler: AppErrorHandler
     ) : MusicPlayerInteractor {
 
-        override suspend fun saveLastPlayingAlbum(albumId: Int) {
-            withContext(dispatchers.io()) {
-                playerRepository.saveLastPlayingAlbumId(albumId)
-            }
-        }
-
-        override fun fetchTrackList(): Flow<FetchResult<List<AppAudioTrack>>> = flow {
-            var prevResult: FetchResult<List<AppAudioTrack>>? = null
+        override fun fetchTrackList(): Flow<FetchResult<AppAlbum?>> = flow {
+            var prevResult: FetchResult<AppAlbum?>? = null
             while (true) {
                 try {
                     val albumIdToFetch = playerRepository.getLastPlayingAlbumId()
-                    val trackList = trackListRepository.fetchAlbums()?.find { album ->
+                    val albumFound = commonRepository.fetchAlbums()?.find { album ->
                         album.id == albumIdToFetch
-                    }?.trackList
-                    val newResult = FetchResult.Success(data = trackList)
+                    }
+                    val newResult = FetchResult.Success(data = albumFound)
                     if (prevResult != newResult) {
                         prevResult = newResult
                         emit(
@@ -47,7 +40,7 @@ interface MusicPlayerInteractor {
 
                 } catch (e: Exception) {
                     val newResult =
-                        FetchResult.Fail<List<AppAudioTrack>>(error = errorHandler.getErrorTypeOf(e))
+                        FetchResult.Fail<AppAlbum?>(error = errorHandler.getErrorTypeOf(e))
                     if (prevResult != newResult) {
                         prevResult = newResult
                         emit(

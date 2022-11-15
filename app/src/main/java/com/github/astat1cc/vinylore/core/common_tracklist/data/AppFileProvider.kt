@@ -1,4 +1,4 @@
-package com.github.astat1cc.vinylore.tracklist.data
+package com.github.astat1cc.vinylore.core.common_tracklist.data
 
 import android.content.Context
 import android.net.Uri

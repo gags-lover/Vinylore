@@ -9,19 +9,19 @@ import com.github.astat1cc.vinylore.player.ui.vinyl.VinylDiscState
 fun VinylAnimated(
     modifier: Modifier = Modifier,
     discState: VinylDiscState = VinylDiscState.STOPPED,
-    playerStateTransition: (VinylDiscState) -> Unit
+    playerStateTransitionFrom: (VinylDiscState) -> Unit
 ) {
     var currentRotation by remember { mutableStateOf(0f) }
 
-    val rotation = remember { Animatable(currentRotation) }
+    val rotationAnimatable = remember { Animatable(currentRotation) }
 
     LaunchedEffect(discState) {
         when (discState) {
             VinylDiscState.STARTED -> {
-                rotation.animateTo(
+                rotationAnimatable.animateTo(
                     targetValue = currentRotation + 360f,
                     animationSpec = infiniteRepeatable(
-                        animation = tween(1333, easing = LinearEasing),
+                        animation = tween(durationMillis = 1333, easing = LinearEasing),
                         repeatMode = RepeatMode.Restart
                     )
                 ) {
@@ -29,35 +29,27 @@ fun VinylAnimated(
                 }
             }
             VinylDiscState.STOPPING -> {
-                if (currentRotation > 0f) {
-                    rotation.animateTo(
-                        targetValue = currentRotation + 120f,
-                        animationSpec = tween(
-                            durationMillis = 1333,
-                            easing = LinearOutSlowInEasing
-                        )
-                    ) {
-                        if (value == targetValue) playerStateTransition(discState)
-                        currentRotation = value
-                    }
+                rotationAnimatable.animateTo(
+                    targetValue = currentRotation + 120f,
+                    animationSpec = tween(durationMillis = 1333, easing = LinearOutSlowInEasing)
+                ) {
+                    if (value == targetValue) playerStateTransitionFrom(discState)
+                    currentRotation = value
                 }
             }
             VinylDiscState.STARTING -> {
-                rotation.animateTo(
+                rotationAnimatable.animateTo(
                     targetValue = currentRotation + 180f,
-                    animationSpec = tween(
-                        durationMillis = 1000,
-                        easing = FastOutLinearInEasing
-                    )
+                    animationSpec = tween(durationMillis = 1000, easing = FastOutLinearInEasing)
                 ) {
                     currentRotation = value
-                    if (value > targetValue - 15f) playerStateTransition(discState)
+                    if (value > targetValue - 15f) playerStateTransitionFrom(discState)
                 }
             }
             VinylDiscState.STOPPED -> {}
         }
     }
-    Vinyl(modifier = modifier, rotationDegrees = rotation.value)
+    Vinyl(modifier = modifier, rotationDegrees = rotationAnimatable.value)
 }
 
 // 3000 and 1250

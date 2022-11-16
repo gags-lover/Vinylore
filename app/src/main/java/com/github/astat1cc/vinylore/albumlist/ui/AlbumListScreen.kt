@@ -12,6 +12,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
+import androidx.navigation.NavOptions
 import com.github.astat1cc.vinylore.R
 import com.github.astat1cc.vinylore.navigation.NavigationTree
 import com.github.astat1cc.vinylore.core.models.ui.UiState
@@ -30,7 +31,10 @@ fun AlbumListScreen(
     fun onAlbumClick(albumId: Int) {
         viewModel.saveChosenPlayingAlbum(albumId)
         // todo add animation: mockup going to the right to indicate where track list is now
-        navController.navigate(NavigationTree.Player.name)
+        navController.navigate(
+            NavigationTree.Player.name,
+            NavOptions.Builder().setPopUpTo(NavigationTree.Player.name, true).build()
+        )
     }
     when (val localState = uiState.value) {
         is UiState.Success -> {

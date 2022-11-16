@@ -65,6 +65,7 @@ class MediaPlayerServiceConnection(
     }
 
     fun prepareMedia(album: AlbumUi) {
+        _playerState.value = PlayerState.IDLE
         _playingAlbum.value = album
         mediaBrowser.sendCustomAction(
             Consts.PREPARE_MEDIA_ACTION,

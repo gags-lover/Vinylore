@@ -19,7 +19,6 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.navigation.NavHostController
-import com.github.astat1cc.vinylore.LAST_OPENED_ALBUM_ID
 import com.github.astat1cc.vinylore.R
 import com.github.astat1cc.vinylore.core.theme.brown
 import com.github.astat1cc.vinylore.navigation.NavigationTree
@@ -105,7 +104,7 @@ fun PlayerScreen(
                     .padding(start = 16.dp)
                     .size(size),
                 discState = discAnimationState.value,
-                playerStateTransition = { oldState ->
+                playerStateTransitionFrom = { oldState ->
                     viewModel.resumePlayerAnimationStateFrom(oldState)
                 }
             )
@@ -133,5 +132,4 @@ fun PlayerScreen(
             viewModel.playPauseToggle()
         }
     }
-//    }
 }

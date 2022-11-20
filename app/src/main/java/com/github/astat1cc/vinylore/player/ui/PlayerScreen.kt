@@ -37,6 +37,7 @@ fun PlayerScreen(
     val uiState = viewModel.uiState.collectAsState()
     val discAnimationState = viewModel.playerAnimationState.collectAsState()
     val tonearmAnimationState = viewModel.tonearmAnimationState.collectAsState()
+    val rotation = viewModel.discRotation.collectAsState()
 
     val localState = uiState.value
     // open album choosing screen if currently no album is chosen
@@ -106,6 +107,10 @@ fun PlayerScreen(
                 discState = discAnimationState.value,
                 playerStateTransitionFrom = { oldState ->
                     viewModel.resumePlayerAnimationStateFrom(oldState)
+                },
+                currentRotation = rotation.value,
+                changeRotation = { newRotation ->
+                    viewModel.changeDiscRotation(newRotation)
                 }
             )
             TonearmAnimated(

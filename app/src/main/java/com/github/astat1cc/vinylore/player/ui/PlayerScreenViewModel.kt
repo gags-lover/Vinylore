@@ -9,7 +9,6 @@ import androidx.lifecycle.viewModelScope
 import com.github.astat1cc.vinylore.Consts
 import com.github.astat1cc.vinylore.core.AppErrorHandler
 import com.github.astat1cc.vinylore.core.models.domain.AppAlbum
-import com.github.astat1cc.vinylore.core.models.domain.AppAudioTrack
 import com.github.astat1cc.vinylore.core.models.domain.FetchResult
 import com.github.astat1cc.vinylore.core.models.ui.AlbumUi
 import com.github.astat1cc.vinylore.core.models.ui.AudioTrackUi
@@ -24,7 +23,7 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
 class PlayerScreenViewModel(
-    private val interactor: MusicPlayerInteractor,
+    interactor: MusicPlayerInteractor,
     private val errorHandler: AppErrorHandler,
     private val serviceConnection: MediaPlayerServiceConnection
 ) : ViewModel() {
@@ -43,6 +42,13 @@ class PlayerScreenViewModel(
     private val _tonearmAnimationState =
         MutableStateFlow<TonearmState>(TonearmState.ON_START_POSITION)
     val tonearmAnimationState: StateFlow<TonearmState> = _tonearmAnimationState.asStateFlow()
+
+    private val _discRotation = MutableStateFlow<Float>(0f)
+    val discRotation = _discRotation.asStateFlow()
+
+    // added to escape situations when asynchronous animatable changing rotation even after stop
+    // (situation when navigating to another album)
+    var isRotationChangingAble = false
 
     private val _currentPlaybackPosition: MutableStateFlow<Long> =
         MutableStateFlow(0L)
@@ -88,6 +94,8 @@ class PlayerScreenViewModel(
                     PlayerState.IDLE -> {
                         tryEmitPlayerState(VinylDiscState.STOPPED)
                         _tonearmAnimationState.value = TonearmState.ON_START_POSITION
+                        isRotationChangingAble = false
+                        _discRotation.value = 0f
                     }
                     PlayerState.LAUNCHING -> {
                         tryEmitPlayerState(VinylDiscState.STARTING)
@@ -155,6 +163,7 @@ class PlayerScreenViewModel(
         if (uiState !is UiState.Success) return // todo handle some error message
 
         if (playerState.value == PlayerState.IDLE) {
+            isRotationChangingAble = true
             serviceConnection.launchPlayer()
         } else {
             if (isPlaying.value) {
@@ -291,5 +300,11 @@ class PlayerScreenViewModel(
 
     fun composableIsInvisible() {
         shouldShowSmoothStartAndStopVinylAnimation.value = false
+    }
+
+    fun changeDiscRotation(newRotation: Float) {
+        if (!isRotationChangingAble) return
+//        Log.e("rotation", "$newRotation")
+        _discRotation.value = newRotation
     }
 }

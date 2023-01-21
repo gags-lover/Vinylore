@@ -48,7 +48,7 @@ interface AlbumListScreenInteractor {
                         FetchResult.Fail(error = errorHandler.getErrorTypeOf(e))
                     )
                 }
-                delay(750L) // todo maybe finally?}
+                delay(750L) // todo maybe finally?
             }
         }
     }

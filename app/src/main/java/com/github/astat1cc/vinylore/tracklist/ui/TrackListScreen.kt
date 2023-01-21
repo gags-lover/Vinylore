@@ -35,10 +35,11 @@ fun TrackListScreen(
     val uiState = viewModel.uiState.collectAsState()
 
     Column(modifier = Modifier.background(vintagePaper)) {
+//        Box(modifier = Modifier.fillMaxWidth().background(brown)) {
         Icon(
             painter = painterResource(R.drawable.ic_arrow_back),
             contentDescription = null,
-            tint = Color.Black,
+            tint = brown,
             modifier = Modifier
                 .padding(start = 4.dp, top = 4.dp)
                 .align(Alignment.Start)
@@ -49,6 +50,7 @@ fun TrackListScreen(
                 .size(48.dp)
                 .padding(12.dp)
         )
+//        }
         Box(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center

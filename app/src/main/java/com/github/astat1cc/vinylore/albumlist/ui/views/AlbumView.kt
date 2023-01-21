@@ -1,6 +1,7 @@
 package com.github.astat1cc.vinylore.albumlist.ui.views
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -39,15 +40,17 @@ fun AlbumView(
                 painter = painterResource(R.drawable.album),
                 contentDescription = "",
                 modifier = Modifier
-                    .width(200.dp)
+                    .width(180.dp)
                     .clipToBounds(),
                 contentScale = ContentScale.FillWidth,
             )
-            Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = album.name ?: stringResource(id = R.string.unknown_name),
+                minLines = 2,
                 maxLines = 2,
-                modifier = Modifier.width(100.dp),
+                modifier = Modifier
+                    .padding(top = 8.dp)
+                    .width(100.dp),
                 textAlign = TextAlign.Center,
                 color = Color.White
             )

@@ -16,8 +16,8 @@ class MediaPlayerServiceConnection(
     context: Context
 ) {
 
-    private val _playerState = MutableStateFlow<PlayerState>(PlayerState.IDLE)
-    val playerState = _playerState.asStateFlow()
+    private val _customPlayerState = MutableStateFlow<CustomPlayerState>(CustomPlayerState.IDLE)
+    val customPlayerState = _customPlayerState.asStateFlow()
 
     private val _playbackState = MutableStateFlow<PlaybackStateCompat?>(null)
     val playbackState: StateFlow<PlaybackStateCompat?> = _playbackState.asStateFlow()
@@ -53,19 +53,19 @@ class MediaPlayerServiceConnection(
         get() = mediaController.transportControls
 
     fun slowPause() {
-        if (_playerState.value != PlayerState.PLAYING) return
+        if (_customPlayerState.value != CustomPlayerState.PLAYING) return
         mediaBrowser.sendCustomAction(Consts.PAUSE_MEDIA_PLAY_ACTION, null, null)
-        _playerState.value = PlayerState.PAUSED
+        tryEmitPlayerState(CustomPlayerState.PAUSED)
     }
 
     fun slowResume() {
-        if (_playerState.value != PlayerState.PAUSED) return
+        if (_customPlayerState.value != CustomPlayerState.PAUSED) return
         mediaBrowser.sendCustomAction(Consts.RESUME_MEDIA_PLAY_ACTION, null, null)
-        _playerState.value = PlayerState.PLAYING
+        tryEmitPlayerState(CustomPlayerState.PLAYING)
     }
 
     fun prepareMedia(album: AlbumUi) {
-        _playerState.value = PlayerState.IDLE
+        tryEmitPlayerState(CustomPlayerState.IDLE)
         _playingAlbum.value = album
         mediaBrowser.sendCustomAction(
             Consts.PREPARE_MEDIA_ACTION,
@@ -79,14 +79,18 @@ class MediaPlayerServiceConnection(
         )
     }
 
+    private fun tryEmitPlayerState(newState: CustomPlayerState) {
+        if (_customPlayerState.value != newState) _customPlayerState.value = newState
+    }
+
     fun launchPlayer() {
-        _playerState.value = PlayerState.LAUNCHING
+        tryEmitPlayerState(CustomPlayerState.LAUNCHING)
         connectionScope.launch {
             delay(3200L)
             mediaBrowser.sendCustomAction(Consts.START_CRACKLE_ACTION, null, null)
             delay(2500L)
             mediaBrowser.sendCustomAction(Consts.START_TRACK_PLAYING_ACTION, null, null)
-            _playerState.value = PlayerState.PLAYING
+            tryEmitPlayerState(CustomPlayerState.PLAYING)
         }
     }
 
@@ -129,10 +133,10 @@ class MediaPlayerServiceConnection(
     ) : MediaBrowserCompat.ConnectionCallback() {
 
         override fun onConnected() {
-            _isConnected.value = true
             mediaController = MediaControllerCompat(context, mediaBrowser.sessionToken).apply {
                 registerCallback(MediaControllerCallback())
             }
+            _isConnected.value = true
         }
 
         override fun onConnectionSuspended() {

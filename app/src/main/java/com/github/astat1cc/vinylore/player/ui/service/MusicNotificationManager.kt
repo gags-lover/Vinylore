@@ -23,7 +23,7 @@ class MusicNotificationManager(
             PlayerNotificationManager.Builder(context, NOTIFICATION_ID, CHANNEL_ID)
                 .setNotificationListener(notificationListener)
                 .setMediaDescriptionAdapter(DescriptionAdapter(mediaController))
-                .setChannelNameResourceId(R.string.mock1)
+                .setChannelNameResourceId(R.string.mock1) // todo remove mocks
                 .setChannelDescriptionResourceId(R.string.mock2)
                 .build().apply {
                     setMediaSessionToken(sessionToken)

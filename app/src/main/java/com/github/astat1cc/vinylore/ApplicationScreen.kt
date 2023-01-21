@@ -1,7 +1,14 @@
 package com.github.astat1cc.vinylore
 
+import androidx.compose.animation.*
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.VisibilityThreshold
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.ExperimentalComposeUiApi
+import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.window.DialogProperties
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -13,14 +20,17 @@ import com.github.astat1cc.vinylore.albumlist.ui.AlbumListScreen
 import com.github.astat1cc.vinylore.navigation.NavigationTree
 import com.github.astat1cc.vinylore.player.ui.PlayerScreen
 import com.github.astat1cc.vinylore.tracklist.ui.TrackListScreen
+import com.google.accompanist.navigation.animation.AnimatedNavHost
+import com.google.accompanist.navigation.animation.composable
+import com.google.accompanist.navigation.animation.rememberAnimatedNavController
 
-@OptIn(ExperimentalComposeUiApi::class)
+@OptIn(ExperimentalComposeUiApi::class, ExperimentalAnimationApi::class)
 @Composable
 fun ApplicationScreen() {
 
-    val navController = rememberNavController()
+    val navController = rememberAnimatedNavController()
 
-    NavHost(
+    AnimatedNavHost(
         navController = navController,
         startDestination = NavigationTree.Player.name
     ) {
@@ -31,10 +41,32 @@ fun ApplicationScreen() {
                 usePlatformDefaultWidth = false
             )
         ) { AlbumListScreen(navController) }
-        composable(route = NavigationTree.Player.name) {
+        composable(
+            route = NavigationTree.Player.name,
+            enterTransition = null,
+            exitTransition = null,
+            popEnterTransition = null,
+            popExitTransition = null
+        ) {
             PlayerScreen(navController)
         }
-        composable(route = NavigationTree.TrackList.name) {
+        composable(
+            route = NavigationTree.TrackList.name,
+            enterTransition = {
+                slideInHorizontally(
+                    initialOffsetX = { it * 3 / 2 },
+                    animationSpec = spring(
+                        stiffness = Spring.StiffnessLow,
+                        visibilityThreshold = IntOffset.VisibilityThreshold
+                    )
+                )
+            },
+            exitTransition = {
+                slideOutHorizontally(
+                    targetOffsetX = { it }
+                )
+            }
+        ) {
             TrackListScreen(navController = navController)
         }
     }

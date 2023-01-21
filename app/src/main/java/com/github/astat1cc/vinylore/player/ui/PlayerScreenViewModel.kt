@@ -34,7 +34,8 @@ class PlayerScreenViewModel(
             .map { fetchResult -> fetchResult.toUiState() }
             .stateIn(viewModelScope, SharingStarted.Lazily, UiState.Loading())
 
-    private val playerState: StateFlow<PlayerState> = serviceConnection.playerState
+    private val customPlayerState: StateFlow<CustomPlayerState> =
+        serviceConnection.customPlayerState
 
     private val _playerAnimationState = MutableStateFlow(VinylDiscState.STOPPED)
     val playerAnimationState = _playerAnimationState.asStateFlow()
@@ -89,27 +90,30 @@ class PlayerScreenViewModel(
     init {
         updatePlayback()
         viewModelScope.launch {
-            playerState.collect { state ->
+            customPlayerState.collect { state ->
                 when (state) {
-                    PlayerState.IDLE -> {
+                    CustomPlayerState.IDLE -> {
                         tryEmitPlayerState(VinylDiscState.STOPPED)
                         _tonearmAnimationState.value = TonearmState.ON_START_POSITION
+
+                        // to escape after-rolling after album changing when u change rotation from animation
                         isRotationChangingAble = false
+
                         _discRotation.value = 0f
                     }
-                    PlayerState.LAUNCHING -> {
+                    CustomPlayerState.LAUNCHING -> {
                         tryEmitPlayerState(VinylDiscState.STARTING)
                         _tonearmAnimationState.value = TonearmState.MOVING_TO_DISC
                     }
-                    PlayerState.PLAYING -> {
+                    CustomPlayerState.PLAYING -> {
                         tryEmitPlayerState(VinylDiscState.STARTING)
                         _tonearmAnimationState.value = TonearmState.STAYING_ON_DISC
                     }
-                    PlayerState.PAUSED -> {
+                    CustomPlayerState.PAUSED -> {
                         tryEmitPlayerState(VinylDiscState.STOPPING)
                         _tonearmAnimationState.value = TonearmState.STAYING_ON_DISC
                     }
-                    PlayerState.TURNING_OFF -> {
+                    CustomPlayerState.TURNING_OFF -> {
                         tryEmitPlayerState(VinylDiscState.STOPPING)
                         _tonearmAnimationState.value = TonearmState.MOVING_FROM_DISC
                     }
@@ -162,7 +166,7 @@ class PlayerScreenViewModel(
         val uiState = uiState.value
         if (uiState !is UiState.Success) return // todo handle some error message
 
-        if (playerState.value == PlayerState.IDLE) {
+        if (customPlayerState.value == CustomPlayerState.IDLE) {
             isRotationChangingAble = true
             serviceConnection.launchPlayer()
         } else {
@@ -210,7 +214,7 @@ class PlayerScreenViewModel(
     private fun FetchResult<AppAlbum?>.toUiState(): UiState<PlayerScreenUiStateData> =
         when (this) {
             is FetchResult.Success -> {
-                val album = if (data == null) data else AlbumUi.fromDomain(data)
+                val album = if (data == null) null else AlbumUi.fromDomain(data)
                 val discChosen = album != null
                 UiState.Success(
                     PlayerScreenUiStateData(
@@ -277,11 +281,17 @@ class PlayerScreenViewModel(
 
     fun resumePlayerAnimationStateFrom(oldState: VinylDiscState) {
         tryEmitPlayerState(
-            when (oldState) {
-                VinylDiscState.STARTING -> VinylDiscState.STARTED
-                VinylDiscState.STOPPING -> VinylDiscState.STOPPED
-                else -> return
+            if (oldState == VinylDiscState.STARTING) {
+                VinylDiscState.STARTED
+            } else {
+                VinylDiscState.STOPPED
             }
+            // in case if fun is called from other states, but i guess it doesn`t happen
+//            when (oldState) {
+//                VinylDiscState.STARTING -> VinylDiscState.STARTED
+//                VinylDiscState.STOPPING -> VinylDiscState.STOPPED
+//                else -> return
+//            }
         )
     }
 
@@ -302,7 +312,7 @@ class PlayerScreenViewModel(
         shouldShowSmoothStartAndStopVinylAnimation.value = false
     }
 
-    fun changeDiscRotation(newRotation: Float) {
+    fun changeDiscRotationFromAnimation(newRotation: Float) {
         if (!isRotationChangingAble) return
 //        Log.e("rotation", "$newRotation")
         _discRotation.value = newRotation

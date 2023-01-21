@@ -78,9 +78,7 @@ class MusicService : MediaBrowserServiceCompat() {
             MusicPlayerNotificationListener(this)
         )
 
-        serviceScope.launch {
-            mediaSource.load()
-        }
+        loadSource()
 
         mediaSessionConnector = MediaSessionConnector(mediaSession).apply {
             setPlaybackPreparer(AudioMediaPlayBackPreparer())
@@ -89,6 +87,27 @@ class MusicService : MediaBrowserServiceCompat() {
         }
 
         musicNotificationManager.showNotification(trackExoPlayer)
+    }
+
+    private fun loadSource() {
+        serviceScope.launch {
+            mediaSource.load()
+        }
+    }
+
+    var sync = false
+    fun startPlayersSync() {
+        sync = true
+        serviceScope.launch {
+            while (sync) {
+                crackleExoPLayer.playWhenReady = trackExoPlayer.playWhenReady
+                delay(300L)
+            }
+        }
+    }
+
+    fun stopPlayerSync() {
+        sync = false
     }
 
     override fun onDestroy() {
@@ -145,10 +164,12 @@ class MusicService : MediaBrowserServiceCompat() {
     }
 
     private fun startTrackPlaying() {
+        startPlayersSync()
         trackExoPlayer.playWhenReady = true
     }
 
     private fun startCrackle() {
+        stopPlayerSync()
         crackleExoPLayer.playWhenReady = true
     }
 
@@ -190,6 +211,7 @@ class MusicService : MediaBrowserServiceCompat() {
                 delay(100L)
             }
             trackExoPlayer.playbackParameters = PlaybackParameters(1f, 1f)
+            trackExoPlayer.volume = 1f
         }
     }
 
@@ -197,6 +219,10 @@ class MusicService : MediaBrowserServiceCompat() {
         super.onTaskRemoved(rootIntent)
 
         with(trackExoPlayer) {
+            stop()
+            clearMediaItems()
+        }
+        with(crackleExoPLayer) {
             stop()
             clearMediaItems()
         }
@@ -231,9 +257,9 @@ class MusicService : MediaBrowserServiceCompat() {
                 currentPlayingMedia = itemToPlay
 
                 preparePlayer(
-                    mediaMetadata = mediaSource.audioMediaMetadata,
-                    itemToPlay = itemToPlay,
-                    playWhenReady = playWhenReady
+//                    mediaMetadata = mediaSource.audioMediaMetadata,
+//                    itemToPlay = itemToPlay,
+//                    playWhenReady = false
                 )
             }
         }
@@ -251,33 +277,31 @@ class MusicService : MediaBrowserServiceCompat() {
         ) = Unit
 
         private fun preparePlayer(
-            mediaMetadata: List<MediaMetadataCompat>,
-            itemToPlay: MediaMetadataCompat?,
-            playWhenReady: Boolean
+//            mediaMetadata: List<MediaMetadataCompat>,
+//            itemToPlay: MediaMetadataCompat?,
+//            playWhenReady: Boolean
         ) {
-            val indexToPlay = if (currentPlayingMedia == null) {
-                0
-            } else {
-                mediaMetadata.indexOf(itemToPlay)
-            }
-
-            serviceScope.launch {
-                val trackPlayerPreparing = launch {
+//            val indexToPlay = if (currentPlayingMedia == null) {
+//                0
+//            } else {
+//                mediaMetadata.indexOf(itemToPlay)
+//            }
+            with(serviceScope) {
+                launch {
                     with(trackExoPlayer) {
                         addListener(PlayerEventListener())
                         setMediaSource(mediaSource.trackMediaSource(dataSourceFactory))
                         prepare()
-                        this.playWhenReady = playWhenReady
-//                    seekTo(indexToPlay, 0)
+                        this.playWhenReady = false
                     }
                 }
-                val cracklePlayerPreparing = launch {
+                launch {
                     with(crackleExoPLayer) {
                         addListener(PlayerEventListener())
                         setMediaSource(mediaSource.crackleMediaSource(dataSourceFactory))
                         repeatMode = Player.REPEAT_MODE_ONE
                         prepare()
-                        this.playWhenReady = playWhenReady
+                        this.playWhenReady = false
                     }
                 }
             }

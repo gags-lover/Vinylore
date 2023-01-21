@@ -13,7 +13,7 @@ class MusicPlayerNotificationListener(
         super.onNotificationCancelled(notificationId, dismissedByUser)
 
         musicService.apply {
-            stopForeground(true)
+            stopForeground(true) // todo deprecated
             isForegroundService = false
             stopSelf() // todo isn't it duplicating?
         }

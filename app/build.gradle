@@ -5,12 +5,12 @@ plugins {
 }
 
 android {
-    compileSdk 32
+    compileSdk 33
 
     defaultConfig {
         applicationId "com.github.astat1cc.vinylore"
         minSdk 21
-        targetSdk 32
+        targetSdk 33
         versionCode 1
         versionName "1.0"
 
@@ -64,8 +64,12 @@ dependencies {
 
     implementation "androidx.compose.runtime:runtime-livedata:$compose_version"
 
+    // todo maybe delete this
     def nav_version = "2.5.2"
     implementation "androidx.navigation:navigation-compose:$nav_version"
+
+    def nav_anim_version = "0.29.0-alpha"
+    implementation "com.google.accompanist:accompanist-navigation-animation:$nav_anim_version"
 
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.1"
 

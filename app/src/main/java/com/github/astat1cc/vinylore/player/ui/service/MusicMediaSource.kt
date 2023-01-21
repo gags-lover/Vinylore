@@ -29,17 +29,22 @@ class MusicMediaSource(
 
     private var state: AudioSourceState = AudioSourceState.CREATED
         set(value) {
-            if (value == AudioSourceState.CREATED || value == AudioSourceState.ERROR) {
+//            if (value == AudioSourceState.CREATED || value == AudioSourceState.ERROR) {
                 synchronized(onReadyListeners) {
                     field = value
-                    onReadyListeners.forEach { listener ->
-                        listener(isReady)
-                    }
+                    executeCollectedListeners()
                 }
-            } else {
-                field = value
-            }
+//            } else {
+//                field = value
+//            }
         }
+
+    private fun executeCollectedListeners() {
+        onReadyListeners.forEach { listener ->
+            listener(isReady)
+        }
+        onReadyListeners.clear()
+    }
 
     suspend fun load() {
         state = AudioSourceState.INITIALIZING

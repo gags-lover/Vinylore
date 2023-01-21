@@ -21,6 +21,10 @@ import com.github.astat1cc.vinylore.albumlist.ui.views.ChoseDirectoryView
 import com.github.astat1cc.vinylore.core.theme.vintagePaper
 import org.koin.androidx.compose.getViewModel
 
+// todo handle ladder effect when scrolling albums (it jumps a little bit)
+// todo when u first chose album it shows again
+// todo when u close app and open again no disc is chosen
+
 @Composable
 fun AlbumListScreen(
     navController: NavHostController,

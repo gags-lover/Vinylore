@@ -18,7 +18,7 @@ interface MusicPlayerInteractor {
     class Impl(
         private val playerRepository: MusicPlayerRepository,
         private val commonRepository: CommonRepository,
-        private val dispatchers: DispatchersProvider,
+        private val dispatchers: DispatchersProvider, // todo maybe remove?
         private val errorHandler: AppErrorHandler
     ) : MusicPlayerInteractor {
 
@@ -31,22 +31,15 @@ interface MusicPlayerInteractor {
                         album.id == albumIdToFetch
                     }
                     val newResult = FetchResult.Success(data = albumFound)
-                    if (prevResult != newResult) {
-                        prevResult = newResult
-                        emit(
-                            prevResult // todo maybe refresh just manually
-                        )
-                    }
-
+                    if (prevResult == newResult) return@flow
+                    prevResult = newResult
+                    emit(prevResult) // todo maybe refresh just manually
                 } catch (e: Exception) {
                     val newResult =
                         FetchResult.Fail<AppAlbum?>(error = errorHandler.getErrorTypeOf(e))
-                    if (prevResult != newResult) {
-                        prevResult = newResult
-                        emit(
-                            prevResult // todo maybe refresh just manually
-                        )
-                    }
+                    if (prevResult != newResult) return@flow
+                    prevResult = newResult
+                    emit(prevResult) // todo maybe refresh just manually
                 }
                 delay(750L) // todo maybe finally?
             }

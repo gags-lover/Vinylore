@@ -27,7 +27,11 @@ interface AppFileProvider {
             return albumWrapperList
                 .filter { albumData -> albumData.trackList.isNotEmpty() }
                 .mapIndexed { index, albumWrapper ->
-                    AppAlbum(index, albumWrapper.name, albumWrapper.trackList)
+                    AppAlbum(
+                        id = index,
+                        name = albumWrapper.name,
+                        trackList = albumWrapper.trackList
+                    )
                 }
         }
 
@@ -61,7 +65,8 @@ interface AppFileProvider {
 
         companion object {
 
-            const val AUDIO_TYPE_PREFIX = "audio/"
+            const val AUDIO_TYPE_PREFIX =
+                "audio/" // todo better use only common types like mp3, flac, mp4 ...
         }
 
         /**

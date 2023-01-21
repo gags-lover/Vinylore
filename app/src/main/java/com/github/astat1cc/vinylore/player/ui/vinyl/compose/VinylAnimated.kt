@@ -23,7 +23,11 @@ fun VinylAnimated(
                 rotationAnimatable.animateTo(
                     targetValue = currentRotation + 360f,
                     animationSpec = infiniteRepeatable(
-                        animation = tween(durationMillis = 1333, easing = LinearEasing),
+                        animation = tween(
+                            durationMillis = 1333,
+                            easing = LinearEasing,
+                            delayMillis = 0
+                        ),
                         repeatMode = RepeatMode.Restart
                     )
                 ) {

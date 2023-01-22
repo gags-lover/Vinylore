@@ -31,13 +31,13 @@ interface MusicPlayerInteractor {
                         album.id == albumIdToFetch
                     }
                     val newResult = FetchResult.Success(data = albumFound)
-                    if (prevResult == newResult) return@flow
+                    if (prevResult == newResult) continue
                     prevResult = newResult
                     emit(prevResult) // todo maybe refresh just manually
                 } catch (e: Exception) {
                     val newResult =
                         FetchResult.Fail<AppAlbum?>(error = errorHandler.getErrorTypeOf(e))
-                    if (prevResult != newResult) return@flow
+                    if (prevResult != newResult) continue
                     prevResult = newResult
                     emit(prevResult) // todo maybe refresh just manually
                 }

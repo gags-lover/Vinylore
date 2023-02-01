@@ -2,7 +2,6 @@ package com.github.astat1cc.vinylore.player.ui.service
 
 import android.app.PendingIntent
 import android.content.Intent
-import android.media.audiofx.Equalizer
 import android.net.Uri
 import android.os.Bundle
 import android.os.ResultReceiver
@@ -10,6 +9,7 @@ import android.support.v4.media.MediaBrowserCompat
 import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.MediaSessionCompat
 import android.support.v4.media.session.PlaybackStateCompat
+import android.util.Log
 import android.widget.Toast
 import androidx.media.MediaBrowserServiceCompat
 import com.github.astat1cc.vinylore.Consts
@@ -22,6 +22,10 @@ import com.google.android.exoplayer2.ext.mediasession.MediaSessionConnector
 import com.google.android.exoplayer2.upstream.cache.CacheDataSource
 import kotlinx.coroutines.*
 import org.koin.android.ext.android.inject
+
+// todo when service is killed, app is not i need to launch service again
+
+private const val CRACKLE_STANDARD_VOLUME = 0.75f
 
 class MusicService : MediaBrowserServiceCompat() {
 
@@ -184,6 +188,7 @@ class MusicService : MediaBrowserServiceCompat() {
                         0.8f + currentSpeed / 10
                     )
                 trackExoPlayer.volume = currentSpeed * 1.2f
+                crackleExoPLayer.volume = currentSpeed * 1.2f
                 delay(100L)
             }
             trackExoPlayer.playWhenReady = false
@@ -192,6 +197,7 @@ class MusicService : MediaBrowserServiceCompat() {
             // because it seems that app saves params even after closing app
             trackExoPlayer.playbackParameters = PlaybackParameters(1f, 1f)
             trackExoPlayer.volume = 1f
+            crackleExoPLayer.volume = CRACKLE_STANDARD_VOLUME
         }
     }
 
@@ -208,10 +214,12 @@ class MusicService : MediaBrowserServiceCompat() {
                         0.8f + currentSpeed / 10
                     )
                 trackExoPlayer.volume = currentSpeed * 2f
+                crackleExoPLayer.volume = currentSpeed * 2f
                 delay(100L)
             }
             trackExoPlayer.playbackParameters = PlaybackParameters(1f, 1f)
             trackExoPlayer.volume = 1f
+            crackleExoPLayer.volume = CRACKLE_STANDARD_VOLUME
         }
     }
 
@@ -253,6 +261,7 @@ class MusicService : MediaBrowserServiceCompat() {
                 val itemToPlay = mediaSource.audioMediaMetadata.find {
                     it.description.mediaId == mediaId
                 }
+                Log.e("album", "found itemToPlay on whenReady listener")
 
                 currentPlayingMedia = itemToPlay
 
@@ -291,6 +300,7 @@ class MusicService : MediaBrowserServiceCompat() {
                     with(trackExoPlayer) {
                         addListener(PlayerEventListener())
                         setMediaSource(mediaSource.trackMediaSource(dataSourceFactory))
+                        Log.e("album", "preparing called")
                         prepare()
                         this.playWhenReady = false
                     }
@@ -302,6 +312,7 @@ class MusicService : MediaBrowserServiceCompat() {
                         repeatMode = Player.REPEAT_MODE_ONE
                         prepare()
                         this.playWhenReady = false
+                        volume = CRACKLE_STANDARD_VOLUME
                     }
                 }
             }

@@ -19,7 +19,7 @@ fun TonearmAnimated(
     tonearmState: TonearmState = TonearmState.ON_START_POSITION,
     tonearmTransition: (TonearmState) -> Unit
 ) {
-    var currentRotation by remember { mutableStateOf(-10f) }
+    var currentRotation by remember { mutableStateOf(0f) }
 
     val rotation = remember { Animatable(currentRotation) }
 
@@ -70,13 +70,13 @@ fun TonearmAnimated(
         modifier = modifier
             .graphicsLayer(
                 transformOrigin = TransformOrigin(
-                    pivotFractionX = 0.75f,
-                    pivotFractionY = 0.25f,
+                    pivotFractionX = 1f,
+                    pivotFractionY = 0.23f,
                 ),
                 rotationZ = currentRotation,
             ),
-        painter = painterResource(R.drawable.tonearm),
-        contentScale = ContentScale.FillWidth,
+        painter = painterResource(R.drawable.tonearm_new),
+        contentScale = ContentScale.Fit,
         contentDescription = null
     )
 }

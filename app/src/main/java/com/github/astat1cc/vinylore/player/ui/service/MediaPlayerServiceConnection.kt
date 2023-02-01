@@ -52,20 +52,38 @@ class MediaPlayerServiceConnection(
     val transportControl: MediaControllerCompat.TransportControls
         get() = mediaController.transportControls
 
+    val isMusicPlaying = playbackState.map { state ->
+        state?.isPlaying == true
+    }.stateIn(connectionScope, SharingStarted.Eagerly, false)
+
+    init {
+        connectionScope.launch {
+            // this is to connect service playback state and player state animation when user paused
+            // or resumed music from the notification
+            isMusicPlaying.collect { isPlaying ->
+                if (isPlaying) {
+                    emitPlayerState(CustomPlayerState.PLAYING)
+                } else if (!isPlaying) {
+                    emitPlayerState(CustomPlayerState.PAUSED)
+                }
+            }
+        }
+    }
+
     fun slowPause() {
         if (_customPlayerState.value != CustomPlayerState.PLAYING) return
         mediaBrowser.sendCustomAction(Consts.PAUSE_MEDIA_PLAY_ACTION, null, null)
-        tryEmitPlayerState(CustomPlayerState.PAUSED)
+        emitPlayerState(CustomPlayerState.PAUSED)
     }
 
     fun slowResume() {
         if (_customPlayerState.value != CustomPlayerState.PAUSED) return
         mediaBrowser.sendCustomAction(Consts.RESUME_MEDIA_PLAY_ACTION, null, null)
-        tryEmitPlayerState(CustomPlayerState.PLAYING)
+//        emitPlayerState(CustomPlayerState.PLAYING)
     }
 
     fun prepareMedia(album: AlbumUi) {
-        tryEmitPlayerState(CustomPlayerState.IDLE)
+        emitPlayerState(CustomPlayerState.IDLE)
         _playingAlbum.value = album
         mediaBrowser.sendCustomAction(
             Consts.PREPARE_MEDIA_ACTION,
@@ -79,18 +97,18 @@ class MediaPlayerServiceConnection(
         )
     }
 
-    private fun tryEmitPlayerState(newState: CustomPlayerState) {
+    private fun emitPlayerState(newState: CustomPlayerState) {
         if (_customPlayerState.value != newState) _customPlayerState.value = newState
     }
 
-    fun launchPlayer() {
-        tryEmitPlayerState(CustomPlayerState.LAUNCHING)
+    fun launchPlaying() {
+        emitPlayerState(CustomPlayerState.LAUNCHING)
         connectionScope.launch {
             delay(3200L)
             mediaBrowser.sendCustomAction(Consts.START_CRACKLE_ACTION, null, null)
             delay(2500L)
             mediaBrowser.sendCustomAction(Consts.START_TRACK_PLAYING_ACTION, null, null)
-            tryEmitPlayerState(CustomPlayerState.PLAYING)
+            emitPlayerState(CustomPlayerState.PLAYING)
         }
     }
 

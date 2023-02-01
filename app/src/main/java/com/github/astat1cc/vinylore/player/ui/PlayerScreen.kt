@@ -7,12 +7,12 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.Icon
 import androidx.compose.material.MaterialTheme
 import androidx.compose.runtime.*
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment.Companion.CenterEnd
 import androidx.compose.ui.Alignment.Companion.CenterHorizontally
 import androidx.compose.ui.Alignment.Companion.CenterStart
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
@@ -27,12 +27,12 @@ import com.github.astat1cc.vinylore.navigation.NavigationTree
 import com.github.astat1cc.vinylore.player.ui.tonearm.TonearmAnimated
 import com.github.astat1cc.vinylore.player.ui.vinyl.compose.AudioControl
 import com.github.astat1cc.vinylore.player.ui.vinyl.compose.VinylAnimated
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import org.koin.androidx.compose.getViewModel
 
 // todo handle sorting track list
 // todo handle bluetooth headphones delay
+// todo handle when u start track from notifications and animation is staying
+// todo extra spin when pause pressed
 
 @Composable
 fun PlayerScreen(
@@ -41,17 +41,24 @@ fun PlayerScreen(
     lifecycleOwner: LifecycleOwner = LocalLifecycleOwner.current
 ) {
     val uiState = viewModel.uiState.collectAsState()
+    val albumChoosingCalled = viewModel.albumChoosingCalled.collectAsState()
     val discAnimationState = viewModel.playerAnimationState.collectAsState()
     val tonearmAnimationState = viewModel.tonearmAnimationState.collectAsState()
     val rotation = viewModel.discRotation.collectAsState()
 
+    val configuration = LocalConfiguration.current
+    val vinylSize = (configuration.screenWidthDp.dp - 32.dp) * 0.7f  // 32 dp is padding 16 + 16 left and right
+
     val localState = uiState.value
-    // open album choosing screen if currently no album is chosen
-    if (localState is UiState.Success && !localState.data.discChosen) {
+    // open album choosing screen if currently no album is chosen (happens only once, then user should
+    // click album choosing button manually
+    if (!albumChoosingCalled.value &&
+        localState is UiState.Success &&
+        !localState.data.discChosen
+    ) {
+        viewModel.albumChoosingCalled()
         navController.navigate(NavigationTree.AlbumList.name)
     }
-
-    val coroutineScope = rememberCoroutineScope()
 
     // sending information every time screen is visible or not to decide to show animation or not
     DisposableEffect(lifecycleOwner) {
@@ -112,11 +119,10 @@ fun PlayerScreen(
             )
         }
         Row {
-            val size = 280.dp // todo handle size normally
             VinylAnimated(
                 modifier = Modifier
                     .padding(start = 16.dp)
-                    .size(size),
+                    .width(vinylSize),
                 discState = discAnimationState.value,
                 playerStateTransitionFrom = { oldState ->
                     viewModel.resumePlayerAnimationStateFrom(oldState)
@@ -129,7 +135,8 @@ fun PlayerScreen(
             TonearmAnimated(
                 modifier = Modifier
 //                    .height(size)
-                    .padding(end = 16.dp),
+                    .padding(end = 16.dp)
+                    .height(vinylSize),
                 tonearmState = tonearmAnimationState.value,
                 tonearmTransition = { oldState ->
                     viewModel.resumeTonearmAnimationStateFrom(oldState)

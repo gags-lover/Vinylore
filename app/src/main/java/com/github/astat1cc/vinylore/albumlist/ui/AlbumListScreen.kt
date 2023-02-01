@@ -18,12 +18,9 @@ import com.github.astat1cc.vinylore.navigation.NavigationTree
 import com.github.astat1cc.vinylore.core.models.ui.UiState
 import com.github.astat1cc.vinylore.albumlist.ui.views.AlbumView
 import com.github.astat1cc.vinylore.albumlist.ui.views.ChoseDirectoryView
+import com.github.astat1cc.vinylore.core.models.ui.AlbumUi
 import com.github.astat1cc.vinylore.core.theme.vintagePaper
 import org.koin.androidx.compose.getViewModel
-
-// todo handle ladder effect when scrolling albums (it jumps a little bit)
-// todo when u first chose album it shows again
-// todo when u close app and open again no disc is chosen
 
 @Composable
 fun AlbumListScreen(
@@ -37,7 +34,8 @@ fun AlbumListScreen(
         // todo add animation: mockup going to the right to indicate where track list is now
         navController.navigate(
             NavigationTree.Player.name,
-            NavOptions.Builder().setPopUpTo(NavigationTree.Player.name, true).build()
+            NavOptions.Builder().setPopUpTo(NavigationTree.Player.name, true)
+                .build()
         )
     }
     when (val localState = uiState.value) {
@@ -101,6 +99,3 @@ fun AlbumListScreen(
         }
     }
 }
-
-
-

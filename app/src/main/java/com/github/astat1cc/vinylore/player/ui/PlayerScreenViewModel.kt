@@ -30,9 +30,12 @@ class PlayerScreenViewModel(
 
     val uiState: StateFlow<UiState<PlayerScreenUiStateData>> =
         // todo it's collecting the same value every time, fix this
-        interactor.fetchTrackList()
+        interactor.getFlow()
             .map { fetchResult -> fetchResult.toUiState() }
             .stateIn(viewModelScope, SharingStarted.Lazily, UiState.Loading())
+
+    private val _albumChoosingCalled = MutableStateFlow<Boolean>(false)
+    val albumChoosingCalled: StateFlow<Boolean> = _albumChoosingCalled.asStateFlow()
 
     private val customPlayerState: StateFlow<CustomPlayerState> =
         serviceConnection.customPlayerState
@@ -68,9 +71,7 @@ class PlayerScreenViewModel(
     private val playbackState: StateFlow<PlaybackStateCompat?> =
         serviceConnection.playbackState // todo make flow of only needed variables
 
-    private val isPlaying: StateFlow<Boolean> = playbackState.map { state ->
-        state?.isPlaying == true
-    }.stateIn(viewModelScope, SharingStarted.Eagerly, false)
+    private val isMusicPlaying: StateFlow<Boolean> = serviceConnection.isMusicPlaying
 
     private val shouldShowSmoothStartAndStopVinylAnimation = MutableStateFlow(false)
 
@@ -90,10 +91,13 @@ class PlayerScreenViewModel(
     init {
         updatePlayback()
         viewModelScope.launch {
+            interactor.startAlbumCheckingLoop()
+        }
+        viewModelScope.launch {
             customPlayerState.collect { state ->
                 when (state) {
                     CustomPlayerState.IDLE -> {
-                        tryEmitPlayerState(VinylDiscState.STOPPED)
+                        tryEmitPlayerAnimationState(VinylDiscState.STOPPED)
                         _tonearmAnimationState.value = TonearmState.ON_START_POSITION
 
                         // to escape after-rolling after album changing when u change rotation from animation
@@ -102,37 +106,24 @@ class PlayerScreenViewModel(
                         _discRotation.value = 0f
                     }
                     CustomPlayerState.LAUNCHING -> {
-                        tryEmitPlayerState(VinylDiscState.STARTING)
+                        tryEmitPlayerAnimationState(VinylDiscState.STARTING)
                         _tonearmAnimationState.value = TonearmState.MOVING_TO_DISC
                     }
                     CustomPlayerState.PLAYING -> {
-                        tryEmitPlayerState(VinylDiscState.STARTING)
+                        tryEmitPlayerAnimationState(VinylDiscState.STARTING)
                         _tonearmAnimationState.value = TonearmState.STAYING_ON_DISC
                     }
                     CustomPlayerState.PAUSED -> {
-                        tryEmitPlayerState(VinylDiscState.STOPPING)
+                        tryEmitPlayerAnimationState(VinylDiscState.STOPPING)
                         _tonearmAnimationState.value = TonearmState.STAYING_ON_DISC
                     }
                     CustomPlayerState.TURNING_OFF -> {
-                        tryEmitPlayerState(VinylDiscState.STOPPING)
+                        tryEmitPlayerAnimationState(VinylDiscState.STOPPING)
                         _tonearmAnimationState.value = TonearmState.MOVING_FROM_DISC
                     }
                 }
             }
         }
-//        viewModelScope.launch {
-//            this@AudioViewModel.isPlaying.collect { isPlaying ->
-//                if (isPlaying) {
-//                    if (shouldShowSmoothStartAndStopVinylAnimation.value) {
-//                        tryEmitPlayerState(VinylDiscState.STARTING)
-//                    } else {
-//                        tryEmitPlayerState(VinylDiscState.STARTED)
-//                    }
-//                } else {
-//                    tryEmitPlayerState(VinylDiscState.STOPPED)
-//                }
-//            }
-//        }
         viewModelScope.launch {
             isConnected.collect { isConnected ->
                 if (isConnected) {
@@ -168,9 +159,9 @@ class PlayerScreenViewModel(
 
         if (customPlayerState.value == CustomPlayerState.IDLE) {
             isRotationChangingAble = true
-            serviceConnection.launchPlayer()
+            serviceConnection.launchPlaying()
         } else {
-            if (isPlaying.value) {
+            if (isMusicPlaying.value) {
                 serviceConnection.slowPause()
             } else {
                 serviceConnection.slowResume()
@@ -191,7 +182,7 @@ class PlayerScreenViewModel(
 //        }
     }
 
-    private fun tryEmitPlayerState(newState: VinylDiscState) {
+    private fun tryEmitPlayerAnimationState(newState: VinylDiscState) {
         val oldState = _playerAnimationState.value
         _playerAnimationState.value = when (newState) {
             VinylDiscState.STARTING ->
@@ -280,7 +271,7 @@ class PlayerScreenViewModel(
     }
 
     fun resumePlayerAnimationStateFrom(oldState: VinylDiscState) {
-        tryEmitPlayerState(
+        tryEmitPlayerAnimationState(
             if (oldState == VinylDiscState.STARTING) {
                 VinylDiscState.STARTED
             } else {
@@ -316,5 +307,9 @@ class PlayerScreenViewModel(
         if (!isRotationChangingAble) return
 //        Log.e("rotation", "$newRotation")
         _discRotation.value = newRotation
+    }
+
+    fun albumChoosingCalled() {
+        _albumChoosingCalled.value = true
     }
 }

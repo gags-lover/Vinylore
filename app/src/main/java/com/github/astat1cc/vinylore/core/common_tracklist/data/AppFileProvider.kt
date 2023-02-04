@@ -2,6 +2,7 @@ package com.github.astat1cc.vinylore.core.common_tracklist.data
 
 import android.content.Context
 import android.net.Uri
+import android.util.Log
 import androidx.documentfile.provider.DocumentFile
 import com.github.astat1cc.vinylore.R
 import com.github.astat1cc.vinylore.core.models.domain.AppAlbum
@@ -61,12 +62,11 @@ interface AppFileProvider {
         private fun getDefaultName(): String =
             context.getString(R.string.unknown_name)
 
-        private fun isAudioType(type: String): Boolean = type.startsWith(AUDIO_TYPE_PREFIX)
+        private fun isAudioType(type: String): Boolean = AUDIO_TYPES_LIST.contains(type)
 
         companion object {
 
-            const val AUDIO_TYPE_PREFIX =
-                "audio/" // todo better use only common types like mp3, flac, mp4 ...
+            val AUDIO_TYPES_LIST = listOf("audio/flac", "audio/mp4", "audio/mp3", "audio/mpeg")
         }
 
         /**

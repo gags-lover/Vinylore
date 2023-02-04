@@ -29,7 +29,6 @@ interface MusicPlayerInteractor {
 
         // called by viewModel
         override suspend fun startAlbumCheckingLoop() {
-            Log.e("album", "album checking loop called of class ${this::class.hashCode()}")
             withContext(dispatchers.io()) {
                 var prevResult: FetchResult<AppAlbum?>? = null
                 while (true) {

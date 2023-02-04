@@ -3,7 +3,6 @@ package com.github.astat1cc.vinylore.player.ui
 import android.support.v4.media.MediaBrowserCompat
 import android.support.v4.media.session.PlaybackStateCompat
 import android.util.Log
-import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.github.astat1cc.vinylore.Consts
@@ -21,6 +20,8 @@ import com.github.astat1cc.vinylore.core.models.ui.UiState
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+
+private const val INITIAL_DELAY_FOR_PLAY_BUTTON_BLOCKING = 1200L
 
 class PlayerScreenViewModel(
     interactor: MusicPlayerInteractor,
@@ -50,9 +51,13 @@ class PlayerScreenViewModel(
     private val _discRotation = MutableStateFlow<Float>(0f)
     val discRotation = _discRotation.asStateFlow()
 
+    private val _tonearmRotation = MutableStateFlow<Float>(0f)
+    val tonearmRotation: StateFlow<Float> = _tonearmRotation.asStateFlow()
+
     // added to escape situations when asynchronous animatable changing rotation even after stop
     // (situation when navigating to another album)
-    var isRotationChangingAble = false
+//    var isRotationChangingAble = true
+//    var isRotationChangingAble = false
 
     private val _currentPlaybackPosition: MutableStateFlow<Long> =
         MutableStateFlow(0L)
@@ -76,7 +81,9 @@ class PlayerScreenViewModel(
     private val shouldShowSmoothStartAndStopVinylAnimation = MutableStateFlow(false)
 
     val currentSongDuration = MusicService.curSongDuration
-    var currentAudioProgress = mutableStateOf(0f)
+    private val currentAudioProgress = MutableStateFlow<Float>(0f)
+
+    private val shouldStartConnectionTonearmRotationWithProgress = MutableStateFlow(false)
 
     private val subscriptionCallback = object : MediaBrowserCompat.SubscriptionCallback() {
 
@@ -88,38 +95,66 @@ class PlayerScreenViewModel(
         }
     }
 
+    private var initialDelayForPlayButtonBlockingPassed = false
+
     init {
         updatePlayback()
-        viewModelScope.launch {
-            interactor.startAlbumCheckingLoop()
-        }
-        viewModelScope.launch {
-            customPlayerState.collect { state ->
-                when (state) {
-                    CustomPlayerState.IDLE -> {
-                        tryEmitPlayerAnimationState(VinylDiscState.STOPPED)
-                        _tonearmAnimationState.value = TonearmState.ON_START_POSITION
+        with(viewModelScope) {
+            launch {
+                // delay to give time previous PlayerScreen's viewmodel to call onCleared() and
+                // emit IDLE to CustomPlayerState
+                delay(INITIAL_DELAY_FOR_PLAY_BUTTON_BLOCKING)
+                initialDelayForPlayButtonBlockingPassed = true
+            }
+            launch {
+                interactor.startAlbumCheckingLoop()
+            }
+            launch {
+                customPlayerState.collect { state ->
+                    when (state) {
+                        CustomPlayerState.IDLE -> {
+                            tryEmitPlayerAnimationState(VinylDiscState.STOPPED)
+                            _tonearmAnimationState.value = TonearmState.ON_START_POSITION
 
-                        // to escape after-rolling after album changing when u change rotation from animation
-                        isRotationChangingAble = false
+                            // to escape after-rolling after album changing when u change rotation from animation
+//                        isRotationChangingAble = false
 
-                        _discRotation.value = 0f
+                            _discRotation.value = 0f
+                        }
+                        CustomPlayerState.LAUNCHING -> {
+                            tryEmitPlayerAnimationState(VinylDiscState.STARTING)
+                            _tonearmAnimationState.value = TonearmState.MOVING_TO_START_POSITION
+                        }
+                        CustomPlayerState.PLAYING -> {
+                            tryEmitPlayerAnimationState(VinylDiscState.STARTING)
+                            _tonearmAnimationState.value = TonearmState.MOVING_ABOVE_DISC
+                            shouldStartConnectionTonearmRotationWithProgress.value = true
+                        }
+                        CustomPlayerState.PAUSED -> {
+                            tryEmitPlayerAnimationState(VinylDiscState.STOPPING)
+                            _tonearmAnimationState.value = TonearmState.STAYING_ON_DISC
+                        }
+                        CustomPlayerState.TURNING_OFF -> {
+                            tryEmitPlayerAnimationState(VinylDiscState.STOPPING)
+                            _tonearmAnimationState.value = TonearmState.MOVING_TO_IDLE_POSITION
+                        }
                     }
-                    CustomPlayerState.LAUNCHING -> {
-                        tryEmitPlayerAnimationState(VinylDiscState.STARTING)
-                        _tonearmAnimationState.value = TonearmState.MOVING_TO_DISC
-                    }
-                    CustomPlayerState.PLAYING -> {
-                        tryEmitPlayerAnimationState(VinylDiscState.STARTING)
-                        _tonearmAnimationState.value = TonearmState.STAYING_ON_DISC
-                    }
-                    CustomPlayerState.PAUSED -> {
-                        tryEmitPlayerAnimationState(VinylDiscState.STOPPING)
-                        _tonearmAnimationState.value = TonearmState.STAYING_ON_DISC
-                    }
-                    CustomPlayerState.TURNING_OFF -> {
-                        tryEmitPlayerAnimationState(VinylDiscState.STOPPING)
-                        _tonearmAnimationState.value = TonearmState.MOVING_FROM_DISC
+                }
+            }
+            launch {
+                shouldStartConnectionTonearmRotationWithProgress.collect { should ->
+                    if (!should) return@collect
+
+                    // to make 100 step road from start to end position of tonearm
+                    var delayTime = currentSongDuration.value / 100
+                    // if delayTime is < 100, then song duration < 10 sec, so to escape too
+                    // often refreshing and too fast moving of tonearm, better
+                    if (delayTime < 100) delayTime = 100
+//                    while (customPlayerState.value == CustomPlayerState.PLAYING) {
+                    while (true) {
+                        _tonearmRotation.value = getRotationFrom(currentAudioProgress.value)
+                        Log.e("rotation", "${_tonearmRotation.value}")
+                        delay(delayTime)
                     }
                 }
             }
@@ -132,7 +167,6 @@ class PlayerScreenViewModel(
                         _currentPlaybackPosition.value = position
                     }
                     serviceConnection.subscribe(rootMediaId, subscriptionCallback)
-                    Log.e("tag", "connected")
                 }
             }
         }
@@ -153,12 +187,26 @@ class PlayerScreenViewModel(
         }
     }
 
+    private fun getRotationFrom(percentageProgress: Float) =
+    // divided by 5.26 to make 100% progress equal to 19 points of rotation, so
+        // start rotation amount + this would give end rotation amount
+        VINYL_TRACK_START_TONEARM_ROTATION + percentageProgress / 5.26f
+
+//    /**
+//     * Function to escape cases when short duration song makes tonearm move too fast, so
+//     * the function returns such rotation that end of the song would be while tonearm didn't
+//     * get to the end of vinyl disc, but speed of moving tonearm would seem normal
+//     */
+//    private fun getRotationProgressForMinimalTrackDuration(percentageProgress: Float) =
+//        VINYL_TRACK_START_TONEARM_ROTATION + percentageProgress / 5.26f
+
     fun playPauseToggle() {
+        if (!initialDelayForPlayButtonBlockingPassed) return
         val uiState = uiState.value
         if (uiState !is UiState.Success) return // todo handle some error message
 
         if (customPlayerState.value == CustomPlayerState.IDLE) {
-            isRotationChangingAble = true
+//            isRotationChangingAble = true
             serviceConnection.launchPlaying()
         } else {
             if (isMusicPlaying.value) {
@@ -239,23 +287,22 @@ class PlayerScreenViewModel(
 
     fun seekTo(value: Float) {
         serviceConnection.transportControl.seekTo(
-            (currentSongDuration * value / 100f).toLong()
+            (currentSongDuration.value * value / 100f).toLong()
         )
     }
 
     private fun updatePlayback() {
         viewModelScope.launch {
-            val position = playbackState.value?.currentPosition ?: 0
-            if (_currentPlaybackPosition.value != position) {
-                _currentPlaybackPosition.value = position
-            }
-            if (currentSongDuration > 0) {
-                currentAudioProgress.value =
-                    _currentPlaybackPosition.value.toFloat() / currentSongDuration.toFloat() * 100f
-            }
-            delay(Consts.PLAYBACK_UPDATE_INTERVAL)
-            if (updatePosition) {
-                updatePlayback()
+            while (updatePosition) {
+                val position = playbackState.value?.currentPosition ?: 0
+                if (_currentPlaybackPosition.value != position) {
+                    _currentPlaybackPosition.value = position
+                }
+                if (currentSongDuration.value > 0) {
+                    currentAudioProgress.value =
+                        _currentPlaybackPosition.value.toFloat() / currentSongDuration.value.toFloat() * 100f
+                }
+                delay(Consts.PLAYBACK_UPDATE_INTERVAL)
             }
         }
     }
@@ -288,9 +335,9 @@ class PlayerScreenViewModel(
 
     fun resumeTonearmAnimationStateFrom(oldState: TonearmState) {
         _tonearmAnimationState.value = when (oldState) {
-            TonearmState.MOVING_TO_DISC -> TonearmState.STAYING_ON_DISC
-            TonearmState.MOVING_FROM_DISC -> TonearmState.ON_START_POSITION
-            TonearmState.MOVING_ON_DISC -> TonearmState.MOVING_FROM_DISC
+            TonearmState.MOVING_TO_START_POSITION -> TonearmState.MOVING_ABOVE_DISC
+            TonearmState.MOVING_TO_IDLE_POSITION -> TonearmState.ON_START_POSITION
+            TonearmState.MOVING_ABOVE_DISC -> TonearmState.MOVING_TO_IDLE_POSITION
             else -> oldState
         }
     }
@@ -304,12 +351,20 @@ class PlayerScreenViewModel(
     }
 
     fun changeDiscRotationFromAnimation(newRotation: Float) {
-        if (!isRotationChangingAble) return
+//        if (!isRotationChangingAble) return
 //        Log.e("rotation", "$newRotation")
         _discRotation.value = newRotation
     }
 
     fun albumChoosingCalled() {
         _albumChoosingCalled.value = true
+    }
+
+    fun changeTonearmRotationFromAnimation(newRotation: Float) {
+        _tonearmRotation.value = newRotation
+    }
+
+    companion object {
+        const val VINYL_TRACK_START_TONEARM_ROTATION = 19f
     }
 }

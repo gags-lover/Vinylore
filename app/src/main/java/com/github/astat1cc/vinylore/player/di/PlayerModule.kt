@@ -1,6 +1,5 @@
 package com.github.astat1cc.vinylore.player.di
 
-import com.github.astat1cc.vinylore.core.database.AppDatabase
 import com.github.astat1cc.vinylore.player.data.MusicPlayerRepositoryImpl
 import com.github.astat1cc.vinylore.player.domain.MusicPlayerInteractor
 import com.github.astat1cc.vinylore.player.domain.MusicPlayerRepository
@@ -22,9 +21,6 @@ import java.io.File
 
 
 val playerModule = module {
-    single {
-        providePlayerDao(database = get())
-    }
     single {
         AudioAttributes.Builder()
             .setContentType(C.AUDIO_CONTENT_TYPE_MUSIC)
@@ -78,5 +74,3 @@ val playerModule = module {
         )
     }
 }
-
-fun providePlayerDao(database: AppDatabase) = database.playerDao()

@@ -11,7 +11,6 @@ import com.github.astat1cc.vinylore.core.DispatchersProvider
 import com.github.astat1cc.vinylore.core.common_tracklist.data.AppFileProvider
 import com.github.astat1cc.vinylore.core.common_tracklist.data.CommonRepositoryImpl
 import com.github.astat1cc.vinylore.core.common_tracklist.domain.CommonRepository
-import com.github.astat1cc.vinylore.core.database.AppDatabase
 import org.koin.android.ext.koin.androidContext
 import org.koin.androidx.viewmodel.dsl.viewModel
 import org.koin.dsl.module
@@ -19,9 +18,6 @@ import org.koin.dsl.module
 const val SHARED_PREFS_NAME = "APP_SHARED_PREFS" // todo replace to app const
 
 val albumListModule = module {
-    single {
-        provideTrackListDao(database = get())
-    }
     single {
         androidContext().getSharedPreferences(SHARED_PREFS_NAME, Context.MODE_PRIVATE)
     }
@@ -63,5 +59,3 @@ val albumListModule = module {
         )
     }
 } // todo replace common to core
-
-fun provideTrackListDao(database: AppDatabase) = database.trackListDao()

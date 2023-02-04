@@ -55,7 +55,6 @@ class MusicMediaSource(
         withContext(Dispatchers.IO) {
             interactor.getFlow().collect { fetchResult ->
                 state = AudioSourceState.INITIALIZING
-                Log.e("album", "initializing")
                 if (fetchResult !is FetchResult.Success || fetchResult.data == null) return@collect
                 val trackListUi =
                     fetchResult.data.trackList.map { trackDomain ->
@@ -64,7 +63,6 @@ class MusicMediaSource(
                         )
                     }
                 audioMediaMetadata = trackListUi.map { track ->
-                    Log.e("album", "$track")
                     MediaMetadataCompat.Builder()
                         .putString(MediaMetadataCompat.METADATA_KEY_MEDIA_ID, track.uri.toString())
                         .putString(MediaMetadataCompat.METADATA_KEY_MEDIA_URI, track.uri.toString())

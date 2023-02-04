@@ -39,8 +39,8 @@ fun VinylAnimated(
                     targetValue = currentRotation + 120f,
                     animationSpec = tween(durationMillis = 1333, easing = LinearOutSlowInEasing)
                 ) {
-                    if (value == targetValue) playerStateTransitionFrom(discState)
                     changeRotation(value)
+                    if (value == targetValue) playerStateTransitionFrom(discState)
                 }
             }
             VinylDiscState.STARTING -> {

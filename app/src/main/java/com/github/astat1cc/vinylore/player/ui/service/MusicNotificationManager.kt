@@ -27,7 +27,7 @@ class MusicNotificationManager(
                 .setChannelDescriptionResourceId(R.string.mock2)
                 .build().apply {
                     setMediaSessionToken(sessionToken)
-                    setSmallIcon(R.drawable.ic_music_note)
+                    setSmallIcon(R.drawable.ic_music_note) // todo change icon
                     setUseRewindAction(false)
                     setUseFastForwardAction(false)
                     setUseNextActionInCompactView(true)
@@ -71,7 +71,7 @@ class MusicNotificationManager(
 //                    }
 //                    override fun onLoadCleared(placeholder: Drawable?) = Unit
 //                })
-            return null
+            return null  // todo song's big icon
         }
     }
 

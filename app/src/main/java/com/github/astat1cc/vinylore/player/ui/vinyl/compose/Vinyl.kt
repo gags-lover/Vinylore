@@ -78,7 +78,7 @@ fun Vinyl(
                 .rotate(rotationDegrees)
                 .aspectRatio(1.0f)
                 .clip(CircleShape),
-            painter = painterResource(R.drawable.album_cover),
+            painter = painterResource(R.drawable.album_cover_vinylore),
             contentDescription = "" // todo content description
         )
     }

@@ -21,6 +21,8 @@ import com.google.android.exoplayer2.Player
 import com.google.android.exoplayer2.ext.mediasession.MediaSessionConnector
 import com.google.android.exoplayer2.upstream.cache.CacheDataSource
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import org.koin.android.ext.android.inject
 
 // todo when service is killed, app is not i need to launch service again
@@ -48,8 +50,9 @@ class MusicService : MediaBrowserServiceCompat() {
     var isForegroundService = false
 
     companion object {
-        var curSongDuration = 0L
-            private set
+        // todo do normal way
+        private var _curSongDuration = MutableStateFlow(0L)
+        val curSongDuration = _curSongDuration.asStateFlow()
 
         private const val TAG = "MusicService"
     }
@@ -188,7 +191,7 @@ class MusicService : MediaBrowserServiceCompat() {
                         0.8f + currentSpeed / 10
                     )
                 trackExoPlayer.volume = currentSpeed * 1.2f
-                crackleExoPLayer.volume = currentSpeed * 1.2f
+                crackleExoPLayer.volume = currentSpeed
                 delay(100L)
             }
             trackExoPlayer.playWhenReady = false
@@ -261,7 +264,6 @@ class MusicService : MediaBrowserServiceCompat() {
                 val itemToPlay = mediaSource.audioMediaMetadata.find {
                     it.description.mediaId == mediaId
                 }
-                Log.e("album", "found itemToPlay on whenReady listener")
 
                 currentPlayingMedia = itemToPlay
 
@@ -300,14 +302,13 @@ class MusicService : MediaBrowserServiceCompat() {
                     with(trackExoPlayer) {
                         addListener(PlayerEventListener())
                         setMediaSource(mediaSource.trackMediaSource(dataSourceFactory))
-                        Log.e("album", "preparing called")
                         prepare()
                         this.playWhenReady = false
                     }
                 }
                 launch {
                     with(crackleExoPLayer) {
-                        addListener(PlayerEventListener())
+//                        addListener(PlayerEventListener())
                         setMediaSource(mediaSource.crackleMediaSource(dataSourceFactory))
                         repeatMode = Player.REPEAT_MODE_ONE
                         prepare()
@@ -316,6 +317,12 @@ class MusicService : MediaBrowserServiceCompat() {
                     }
                 }
             }
+        }
+
+        private fun tryEmitDuration(newDuration: Long) {
+            val oldDuration = curSongDuration.value
+            if (oldDuration == newDuration) return
+            _curSongDuration.value = newDuration
         }
 
         private inner class PlayerEventListener : Player.Listener {
@@ -332,7 +339,7 @@ class MusicService : MediaBrowserServiceCompat() {
             override fun onEvents(player: Player, events: Player.Events) {
                 super.onEvents(player, events)
 
-                curSongDuration = player.duration
+                tryEmitDuration(player.duration)
             }
 
             override fun onPlayerError(error: PlaybackException) {

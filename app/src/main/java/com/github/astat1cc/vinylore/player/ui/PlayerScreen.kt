@@ -31,8 +31,8 @@ import org.koin.androidx.compose.getViewModel
 
 // todo handle sorting track list
 // todo handle bluetooth headphones delay
-// todo handle when u start track from notifications and animation is staying
 // todo extra spin when pause pressed
+// todo make tonearm move slowly to start position while going to next track
 
 @Composable
 fun PlayerScreen(
@@ -44,10 +44,12 @@ fun PlayerScreen(
     val albumChoosingCalled = viewModel.albumChoosingCalled.collectAsState()
     val discAnimationState = viewModel.playerAnimationState.collectAsState()
     val tonearmAnimationState = viewModel.tonearmAnimationState.collectAsState()
-    val rotation = viewModel.discRotation.collectAsState()
+    val discRotation = viewModel.discRotation.collectAsState()
+    val tonearmRotation = viewModel.tonearmRotation.collectAsState()
 
     val configuration = LocalConfiguration.current
-    val vinylSize = (configuration.screenWidthDp.dp - 32.dp) * 0.7f  // 32 dp is padding 16 + 16 left and right
+    val vinylSize =
+        (configuration.screenWidthDp.dp - 32.dp) * 0.7f  // 32 dp is padding 16 + 16 left and right
 
     val localState = uiState.value
     // open album choosing screen if currently no album is chosen (happens only once, then user should
@@ -118,16 +120,17 @@ fun PlayerScreen(
                     .padding(12.dp)
             )
         }
-        Row {
+        Box(modifier = Modifier.align(CenterHorizontally)) {
             VinylAnimated(
                 modifier = Modifier
                     .padding(start = 16.dp)
-                    .width(vinylSize),
+                    .width(vinylSize)
+                    .align(CenterStart),
                 discState = discAnimationState.value,
                 playerStateTransitionFrom = { oldState ->
                     viewModel.resumePlayerAnimationStateFrom(oldState)
                 },
-                currentRotation = rotation.value,
+                currentRotation = discRotation.value,
                 changeRotation = { newRotation ->
                     viewModel.changeDiscRotationFromAnimation(newRotation)
                 }
@@ -135,14 +138,45 @@ fun PlayerScreen(
             TonearmAnimated(
                 modifier = Modifier
 //                    .height(size)
-                    .padding(end = 16.dp)
-                    .height(vinylSize),
+                    .padding(start = vinylSize)
+                    .height(vinylSize)
+                    .align(CenterStart),
+                currentRotation = tonearmRotation.value,
                 tonearmState = tonearmAnimationState.value,
                 tonearmTransition = { oldState ->
                     viewModel.resumeTonearmAnimationStateFrom(oldState)
+                },
+                changeRotation = { newRotation ->
+                    viewModel.changeTonearmRotationFromAnimation(newRotation)
+
                 }
             )
         }
+//        Row {
+//            VinylAnimated(
+//                modifier = Modifier
+//                    .padding(start = 16.dp)
+//                    .width(vinylSize),
+//                discState = discAnimationState.value,
+//                playerStateTransitionFrom = { oldState ->
+//                    viewModel.resumePlayerAnimationStateFrom(oldState)
+//                },
+//                currentRotation = rotation.value,
+//                changeRotation = { newRotation ->
+//                    viewModel.changeDiscRotationFromAnimation(newRotation)
+//                }
+//            )
+//            TonearmAnimated(
+//                modifier = Modifier
+////                    .height(size)
+//                    .padding(end = 16.dp)
+//                    .height(vinylSize),
+//                tonearmState = tonearmAnimationState.value,
+//                tonearmTransition = { oldState ->
+//                    viewModel.resumeTonearmAnimationStateFrom(oldState)
+//                }
+//            )
+//        }
         AudioControl(
             modifier = Modifier
                 .align(CenterHorizontally)

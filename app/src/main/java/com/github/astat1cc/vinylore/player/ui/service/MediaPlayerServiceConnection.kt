@@ -6,11 +6,14 @@ import android.support.v4.media.MediaBrowserCompat
 import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.MediaControllerCompat
 import android.support.v4.media.session.PlaybackStateCompat
+import android.util.Log
 import com.github.astat1cc.vinylore.Consts
 import com.github.astat1cc.vinylore.core.models.ui.AlbumUi
 import com.github.astat1cc.vinylore.core.models.ui.AudioTrackUi
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
+
+// todo handle queue ending
 
 class MediaPlayerServiceConnection(
     context: Context
@@ -31,8 +34,7 @@ class MediaPlayerServiceConnection(
     private val _playingAlbum = MutableStateFlow<AlbumUi?>(null)
     val playingAlbum: StateFlow<AlbumUi?> = _playingAlbum.asStateFlow()
 
-    private val job = SupervisorJob()
-    private val connectionScope = CoroutineScope(Dispatchers.Main + job)
+    private val connectionScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
 
     private lateinit var mediaController: MediaControllerCompat
 
@@ -98,7 +100,11 @@ class MediaPlayerServiceConnection(
     }
 
     private fun emitPlayerState(newState: CustomPlayerState) {
-        if (_customPlayerState.value != newState) _customPlayerState.value = newState
+        val oldState = _customPlayerState.value
+        if (oldState == newState ||
+            (oldState == CustomPlayerState.IDLE && newState == CustomPlayerState.PAUSED)
+        ) return
+        _customPlayerState.value = newState
     }
 
     fun launchPlaying() {
@@ -140,6 +146,7 @@ class MediaPlayerServiceConnection(
         callback: MediaBrowserCompat.SubscriptionCallback
     ) {
         mediaBrowser.unsubscribe(parentId, callback)
+        emitPlayerState(CustomPlayerState.IDLE)
     }
 
     fun refreshMediaBrowserChildren() {

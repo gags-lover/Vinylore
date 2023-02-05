@@ -28,7 +28,7 @@ fun AudioControl(
                 else -> R.drawable.ic_play
             }
         ),
-        contentDescription = "", // todo content description
+        contentDescription = null, // todo content description
         tint = tint,
         modifier = modifier
             .clip(CircleShape)

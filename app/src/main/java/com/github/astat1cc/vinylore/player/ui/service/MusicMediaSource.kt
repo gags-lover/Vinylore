@@ -53,7 +53,7 @@ class MusicMediaSource(
 //        state = AudioSourceState.INITIALIZING
 
         withContext(Dispatchers.IO) {
-            interactor.getFlow().collect { fetchResult ->
+            interactor.getAlbumFlow().collect { fetchResult ->
                 state = AudioSourceState.INITIALIZING
                 if (fetchResult !is FetchResult.Success || fetchResult.data == null) return@collect
                 val trackListUi =

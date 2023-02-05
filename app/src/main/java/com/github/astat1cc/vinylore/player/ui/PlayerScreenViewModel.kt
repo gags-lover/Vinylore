@@ -24,15 +24,18 @@ import kotlinx.coroutines.launch
 private const val INITIAL_DELAY_FOR_PLAY_BUTTON_BLOCKING = 1200L
 
 class PlayerScreenViewModel(
-    interactor: MusicPlayerInteractor,
+    private val interactor: MusicPlayerInteractor,
     private val errorHandler: AppErrorHandler,
     private val serviceConnection: MediaPlayerServiceConnection
 ) : ViewModel() {
 
     val uiState: StateFlow<UiState<PlayerScreenUiStateData>> =
-        interactor.getFlow()
+        interactor.getAlbumFlow()
             .map { fetchResult -> fetchResult.toUiState() }
             .stateIn(viewModelScope, SharingStarted.Lazily, UiState.Loading())
+
+//    private val _uiState = MutableStateFlow<UiState<PlayerScreenUiStateData>>(UiState.Loading())
+//    val uiState: StateFlow<UiState<PlayerScreenUiStateData>> = _uiState.asStateFlow()
 
     private val _albumChoosingCalled = MutableStateFlow<Boolean>(false)
     val albumChoosingCalled: StateFlow<Boolean> = _albumChoosingCalled.asStateFlow()
@@ -106,7 +109,7 @@ class PlayerScreenViewModel(
                 initialDelayForPlayButtonBlockingPassed = true
             }
             launch {
-                interactor.startAlbumCheckingLoop()
+                interactor.initializeAlbum()
             }
             launch {
                 customPlayerState.collect { state ->

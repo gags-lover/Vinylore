@@ -30,7 +30,6 @@ class PlayerScreenViewModel(
 ) : ViewModel() {
 
     val uiState: StateFlow<UiState<PlayerScreenUiStateData>> =
-        // todo it's collecting the same value every time, fix this
         interactor.getFlow()
             .map { fetchResult -> fetchResult.toUiState() }
             .stateIn(viewModelScope, SharingStarted.Lazily, UiState.Loading())

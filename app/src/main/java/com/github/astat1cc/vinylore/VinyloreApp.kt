@@ -1,7 +1,6 @@
 package com.github.astat1cc.vinylore
 
 import android.app.Application
-import com.github.astat1cc.vinylore.core.database.databaseModule
 import com.github.astat1cc.vinylore.player.di.playerModule
 import com.github.astat1cc.vinylore.albumlist.di.albumListModule
 import com.github.astat1cc.vinylore.tracklist.di.trackListModule
@@ -15,7 +14,7 @@ class VinyloreApp : Application() {
 
         startKoin {
             androidContext(this@VinyloreApp)
-            modules(databaseModule, albumListModule, playerModule, trackListModule)
+            modules(albumListModule, playerModule, trackListModule)
         }
     }
 }

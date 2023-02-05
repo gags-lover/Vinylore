@@ -56,7 +56,7 @@ interface MusicPlayerInteractor {
         }
 
         // called by viewmodel and mediaSource
-        override fun getFlow(): SharedFlow<FetchResult<AppAlbum?>> = playingAlbum
+        override fun getFlow(): SharedFlow<FetchResult<AppAlbum?>> = playingAlbum.asSharedFlow()
 
 //        override fun fetchAlbum(): Flow<FetchResult<AppAlbum?>> = flow {
 //            var prevResult: FetchResult<AppAlbum?>? = null

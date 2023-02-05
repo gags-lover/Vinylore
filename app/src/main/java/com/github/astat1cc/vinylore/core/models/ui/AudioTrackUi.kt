@@ -9,9 +9,6 @@ data class AudioTrackUi(
     val name: String?
 ) {
 
-    fun toDomain() =
-        AppAudioTrack(uri.toString(), name ?: "No name") // todo remove hardcoded name
-
     companion object {
 
         fun fromDomain(track: AppAudioTrack) = with(track) {

@@ -19,9 +19,31 @@ class AlbumListScreenViewModel(
     private val errorHandler: AppErrorHandler
 ) : ViewModel() {
 
-    val uiState: StateFlow<UiState<List<AlbumUi>?>> = interactor.fetchAlbums()
-        .map { fetchResult -> fetchResult.toUiState() }
-        .stateIn(viewModelScope, SharingStarted.Lazily, UiState.Loading())
+//    val uiState: StateFlow<UiState<List<AlbumUi>?>> = interactor.fetchAlbums()
+//        .map { fetchResult -> fetchResult.toUiState() }
+//        .stateIn(viewModelScope, SharingStarted.Lazily, UiState.Loading())
+
+    private val _uiState = MutableStateFlow<UiState<List<AlbumUi>?>>(UiState.Loading())
+    val uiState: StateFlow<UiState<List<AlbumUi>?>> = _uiState.asStateFlow()
+
+    init {
+        enableAlbumsScan()
+        viewModelScope.launch {
+            interactor.fetchAlbums().collect { fetchResult ->
+                _uiState.value = fetchResult.toUiState()
+            }
+        }
+    }
+
+//    init {
+//        fetchAlbums()
+//    }
+
+//    fun fetchAlbums() {
+//        viewModelScope.launch(dispatchers.io()) {
+//            _uiState.value = interactor.fetchAlbums().toUiState()
+//        }
+//    }
 
     fun handleChosenDirUri(uri: Uri) = viewModelScope.launch(dispatchers.io()) {
         interactor.saveChosenDirectoryPath(uri.toString())
@@ -29,6 +51,15 @@ class AlbumListScreenViewModel(
 
     fun saveChosenPlayingAlbum(albumId: Int) = viewModelScope.launch(dispatchers.io()) {
         interactor.saveChosenPlayingAlbum(albumId)
+    }
+
+    fun disableAlbumsScan() {
+        interactor.disableAlbumsScan()
+    }
+
+    fun enableAlbumsScan() {
+        _uiState.value = UiState.Loading()
+        interactor.enableAlbumsScan()
     }
 
     private fun FetchResult<List<AppAlbum>?>.toUiState(): UiState<List<AlbumUi>?> =

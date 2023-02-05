@@ -6,7 +6,6 @@ import com.github.astat1cc.vinylore.core.DispatchersProvider
 import com.github.astat1cc.vinylore.core.common_tracklist.domain.CommonRepository
 import com.github.astat1cc.vinylore.core.models.domain.AppAlbum
 import com.github.astat1cc.vinylore.core.models.domain.FetchResult
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.withContext
 
@@ -14,9 +13,21 @@ interface MusicPlayerInteractor {
 
 //    fun fetchAlbum(): Flow<FetchResult<AppAlbum?>>
 
-    suspend fun startAlbumCheckingLoop()
+//    suspend fun startAlbumCheckingLoop()
 
-    fun getFlow(): SharedFlow<FetchResult<AppAlbum?>>
+//    fun getFlow(): SharedFlow<FetchResult<AppAlbum?>>
+
+    /**
+     * Always returns the same instance of SharedFlow
+     */
+    fun getAlbumFlow(): SharedFlow<FetchResult<AppAlbum?>>
+
+    /**
+     * Fetching album and emitting FetchResult to the instance of SharedFlow, which can be returned
+     * by calling getAlbumFlow(). Originally this instance of SharedFlow is not initialized
+     * and staying empty if you don't call this function.
+     */
+    suspend fun initializeAlbum()
 
     class Impl(
         private val playerRepository: MusicPlayerRepository,
@@ -25,38 +36,60 @@ interface MusicPlayerInteractor {
         private val errorHandler: AppErrorHandler
     ) : MusicPlayerInteractor {
 
+        // we need the same instance for viewmodel and service, so we're holding our album
+        // in a variable instead of creating and returning new flow every time the function called
         private val playingAlbum = MutableSharedFlow<FetchResult<AppAlbum?>>(replay = 1)
 
-        // called by viewModel
-        override suspend fun startAlbumCheckingLoop() {
+        override fun getAlbumFlow(): SharedFlow<FetchResult<AppAlbum?>> =
+            playingAlbum.asSharedFlow()
+
+        override suspend fun initializeAlbum() {
             withContext(dispatchers.io()) {
-                var prevResult: FetchResult<AppAlbum?>? = null
-                while (true) {
-                    try {
-                        val albumIdToFetch = playerRepository.getLastPlayingAlbumId()
-                        val albumFound = commonRepository.fetchAlbums()?.find { album ->
-                            album.id == albumIdToFetch
-                        }
-                        val newResult = FetchResult.Success(data = albumFound)
-                        if (prevResult != newResult) {
-                            prevResult = newResult
-                            playingAlbum.emit(prevResult) // todo maybe refresh just manually
-                        }
-                    } catch (e: Exception) {
-                        val newResult =
-                            FetchResult.Fail<AppAlbum?>(error = errorHandler.getErrorTypeOf(e))
-                        if (prevResult != newResult) {
-                            prevResult = newResult
-                            playingAlbum.emit(prevResult) // todo maybe refresh just manually
-                        }
+                try {
+                    val albumIdToFetch = playerRepository.getLastPlayingAlbumId()
+                    val albumFound: AppAlbum? = commonRepository.fetchAlbums()?.find { album ->
+                        album.id == albumIdToFetch
                     }
-                    delay(2000L) // todo maybe finally?
+                    playingAlbum.emit(
+                        FetchResult.Success(data = albumFound)
+                    )
+                } catch (e: Exception) {
+                    playingAlbum.emit(
+                        FetchResult.Fail(error = errorHandler.getErrorTypeOf(e))
+                    )
                 }
             }
-        }
 
-        // called by viewmodel and mediaSource
-        override fun getFlow(): SharedFlow<FetchResult<AppAlbum?>> = playingAlbum.asSharedFlow()
+            // called by viewModel
+//        override suspend fun startAlbumCheckingLoop() {
+//            withContext(dispatchers.io()) {
+//                var prevResult: FetchResult<AppAlbum?>? = null
+//                while (true) {
+//                    try {
+//                        val albumIdToFetch = playerRepository.getLastPlayingAlbumId()
+//                        val albumFound = commonRepository.fetchAlbums()?.find { album ->
+//                            album.id == albumIdToFetch
+//                        }
+//                        val newResult = FetchResult.Success(data = albumFound)
+//                        if (prevResult != newResult) {
+//                            prevResult = newResult
+//                            playingAlbum.emit(prevResult) // todo maybe refresh just manually
+//                        }
+//                    } catch (e: Exception) {
+//                        val newResult =
+//                            FetchResult.Fail<AppAlbum?>(error = errorHandler.getErrorTypeOf(e))
+//                        if (prevResult != newResult) {
+//                            prevResult = newResult
+//                            playingAlbum.emit(prevResult) // todo maybe refresh just manually
+//                        }
+//                    }
+//                    delay(2000L) // todo maybe finally?
+//                }
+//            }
+//        }
+
+            // called by viewmodel and mediaSource
+//        override fun getFlow(): SharedFlow<FetchResult<AppAlbum?>> = playingAlbum.asSharedFlow()
 
 //        override fun fetchAlbum(): Flow<FetchResult<AppAlbum?>> = flow {
 //            var prevResult: FetchResult<AppAlbum?>? = null
@@ -83,5 +116,6 @@ interface MusicPlayerInteractor {
 //                delay(2750L) // todo maybe finally?
 //            }
 //        }
+        }
     }
 }

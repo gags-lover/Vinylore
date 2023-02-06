@@ -23,6 +23,9 @@ import kotlinx.coroutines.launch
 
 private const val INITIAL_DELAY_FOR_PLAY_BUTTON_BLOCKING = 1200L
 
+// todo when song is changed delay time of progress connecting is still the same as prev one
+// todo when changing album player is not idle
+
 class PlayerScreenViewModel(
     private val interactor: MusicPlayerInteractor,
     private val errorHandler: AppErrorHandler,
@@ -76,7 +79,7 @@ class PlayerScreenViewModel(
     private lateinit var rootMediaId: String
 
     private val playbackState: StateFlow<PlaybackStateCompat?> =
-        serviceConnection.playbackState // todo make flow of only needed variables
+        serviceConnection.playbackState
 
     private val isMusicPlaying: StateFlow<Boolean> = serviceConnection.isMusicPlaying
 
@@ -285,6 +288,10 @@ class PlayerScreenViewModel(
 
     fun skipToNext() {
         serviceConnection.skipToNext()
+    }
+
+    fun skipToPrevious() {
+        serviceConnection.skipToPrevious()
     }
 
     fun seekTo(value: Float) {

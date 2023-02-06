@@ -8,12 +8,6 @@ data class AlbumUi(
     val trackList: List<AudioTrackUi>
 ) {
 
-//    fun toDomain() = AppAlbum(
-//        name ?: "No name",
-//        trackList.map { trackUi -> trackUi.toDomain() },
-//        id
-//    ) // todo remove hardcoded name
-
     companion object {
 
         fun fromDomain(album: AppAlbum) = with(album) {

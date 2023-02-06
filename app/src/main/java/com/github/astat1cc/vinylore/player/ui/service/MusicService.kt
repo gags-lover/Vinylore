@@ -94,6 +94,8 @@ class MusicService : MediaBrowserServiceCompat() {
         }
 
         musicNotificationManager.showNotification(trackExoPlayer)
+
+        startPlayersSync() // todo if this right
     }
 
     private fun loadSource() {
@@ -302,6 +304,7 @@ class MusicService : MediaBrowserServiceCompat() {
                     with(trackExoPlayer) {
                         addListener(PlayerEventListener())
                         setMediaSource(mediaSource.trackMediaSource(dataSourceFactory))
+                        repeatMode = Player.REPEAT_MODE_ALL
                         prepare()
                         this.playWhenReady = false
                     }

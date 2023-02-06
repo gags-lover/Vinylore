@@ -32,7 +32,7 @@ interface MusicPlayerInteractor {
     class Impl(
         private val playerRepository: MusicPlayerRepository,
         private val commonRepository: CommonRepository,
-        private val dispatchers: DispatchersProvider, // todo maybe remove?
+        private val dispatchers: DispatchersProvider,
         private val errorHandler: AppErrorHandler
     ) : MusicPlayerInteractor {
 
@@ -73,17 +73,17 @@ interface MusicPlayerInteractor {
 //                        val newResult = FetchResult.Success(data = albumFound)
 //                        if (prevResult != newResult) {
 //                            prevResult = newResult
-//                            playingAlbum.emit(prevResult) // todo maybe refresh just manually
+//                            playingAlbum.emit(prevResult)
 //                        }
 //                    } catch (e: Exception) {
 //                        val newResult =
 //                            FetchResult.Fail<AppAlbum?>(error = errorHandler.getErrorTypeOf(e))
 //                        if (prevResult != newResult) {
 //                            prevResult = newResult
-//                            playingAlbum.emit(prevResult) // todo maybe refresh just manually
+//                            playingAlbum.emit(prevResult)
 //                        }
 //                    }
-//                    delay(2000L) // todo maybe finally?
+//                    delay(2000L)
 //                }
 //            }
 //        }
@@ -103,17 +103,17 @@ interface MusicPlayerInteractor {
 ////                    Log.e("album", "$albumFound")
 //                    if (prevResult != newResult) {
 //                        prevResult = newResult
-//                        emit(prevResult) // todo maybe refresh just manually
+//                        emit(prevResult)
 //                    }
 //                } catch (e: Exception) {
 //                    val newResult =
 //                        FetchResult.Fail<AppAlbum?>(error = errorHandler.getErrorTypeOf(e))
 //                    if (prevResult != newResult) {
 //                        prevResult = newResult
-//                        emit(prevResult) // todo maybe refresh just manually
+//                        emit(prevResult)
 //                    }
 //                }
-//                delay(2750L) // todo maybe finally?
+//                delay(2750L)
 //            }
 //        }
         }

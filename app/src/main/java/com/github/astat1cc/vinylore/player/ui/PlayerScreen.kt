@@ -7,6 +7,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.Icon
 import androidx.compose.material.MaterialTheme
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Alignment.Companion.CenterEnd
 import androidx.compose.ui.Alignment.Companion.CenterHorizontally
 import androidx.compose.ui.Alignment.Companion.CenterStart
@@ -33,6 +34,7 @@ import org.koin.androidx.compose.getViewModel
 // todo handle bluetooth headphones delay
 // todo extra spin when pause pressed
 // todo make tonearm move slowly to start position while going to next track
+// todo handle autofocus pause other media services
 
 @Composable
 fun PlayerScreen(
@@ -178,16 +180,17 @@ fun PlayerScreen(
 //            )
 //        }
         AudioControl(
-            modifier = Modifier
-                .align(CenterHorizontally)
-                .padding(24.dp)
-                .size(64.dp),
-            discState = discAnimationState.value
-        ) {
-            if (localState !is UiState.Success ||
-                localState.data.album == null
-            ) return@AudioControl // todo handle ui state of error
-            viewModel.playPauseToggle()
-        }
+            modifier = Modifier.align(CenterHorizontally),
+            discState = discAnimationState.value,
+            clickTogglePlayPause = {
+                if (localState !is UiState.Success ||
+                    localState.data.album == null
+                ) return@AudioControl // todo handle ui state of error
+                viewModel.playPauseToggle()
+            },
+            clickSkipPrevious = { viewModel.skipToPrevious() },
+            clickSkipNext = { viewModel.skipToNext() },
+            clickChangeRepeatMode = {}
+        )
     }
 }

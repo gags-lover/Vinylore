@@ -24,7 +24,7 @@ import org.koin.androidx.compose.getViewModel
 
 // todo indicate already chosen album
 // todo when u chose already chosen album don't stop playing
-// todo get back to flow model maybe
+// todo scrolling bar
 
 @Composable
 fun AlbumListScreen(

@@ -134,6 +134,10 @@ class MediaPlayerServiceConnection(
         transportControl.skipToNext()
     }
 
+    fun skipToPrevious() {
+        transportControl.skipToPrevious()
+    }
+
     fun subscribe(
         parentId: String,
         callback: MediaBrowserCompat.SubscriptionCallback
@@ -146,7 +150,6 @@ class MediaPlayerServiceConnection(
         callback: MediaBrowserCompat.SubscriptionCallback
     ) {
         mediaBrowser.unsubscribe(parentId, callback)
-        emitPlayerState(CustomPlayerState.IDLE)
     }
 
     fun refreshMediaBrowserChildren() {

@@ -58,4 +58,4 @@ val albumListModule = module {
             errorHandler = get()
         )
     }
-} // todo replace common to core
+}

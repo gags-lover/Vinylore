@@ -10,13 +10,15 @@ import com.github.astat1cc.vinylore.core.models.domain.AppAlbum
 import com.github.astat1cc.vinylore.core.models.domain.FetchResult
 import com.github.astat1cc.vinylore.core.models.ui.AlbumUi
 import com.github.astat1cc.vinylore.core.models.ui.UiState
+import com.github.astat1cc.vinylore.player.ui.service.MediaPlayerServiceConnection
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
 class AlbumListScreenViewModel(
     private val interactor: AlbumListScreenInteractor,
     private val dispatchers: DispatchersProvider,
-    private val errorHandler: AppErrorHandler
+    private val errorHandler: AppErrorHandler,
+    private val serviceConnection: MediaPlayerServiceConnection
 ) : ViewModel() {
 
 //    val uiState: StateFlow<UiState<List<AlbumUi>?>> = interactor.fetchAlbums()
@@ -51,6 +53,7 @@ class AlbumListScreenViewModel(
 
     fun saveChosenPlayingAlbum(albumId: Int) = viewModelScope.launch(dispatchers.io()) {
         interactor.saveChosenPlayingAlbum(albumId)
+//        serviceConnection.clearCurrentPlayingTrack()
     }
 
     fun disableAlbumsScan() {

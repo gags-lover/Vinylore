@@ -3,8 +3,12 @@ package com.github.astat1cc.vinylore.player.ui.service
 import android.app.PendingIntent
 import android.content.Context
 import android.graphics.Bitmap
+import android.graphics.drawable.Drawable
 import android.support.v4.media.session.MediaControllerCompat
 import android.support.v4.media.session.MediaSessionCompat
+import com.bumptech.glide.Glide
+import com.bumptech.glide.request.target.CustomTarget
+import com.bumptech.glide.request.transition.Transition
 import com.github.astat1cc.vinylore.R
 import com.google.android.exoplayer2.Player
 import com.google.android.exoplayer2.ui.PlayerNotificationManager
@@ -18,7 +22,8 @@ class MusicNotificationManager(
     private val notificationManager: PlayerNotificationManager
 
     init {
-        val mediaController = MediaControllerCompat(context, sessionToken) // todo inject here and everywhere
+        val mediaController =
+            MediaControllerCompat(context, sessionToken) // todo inject here and everywhere
         notificationManager =
             PlayerNotificationManager.Builder(context, NOTIFICATION_ID, CHANNEL_ID)
                 .setNotificationListener(notificationListener)
@@ -60,17 +65,21 @@ class MusicNotificationManager(
             player: Player,
             callback: PlayerNotificationManager.BitmapCallback
         ): Bitmap? {
-//            Glide.with(context).asBitmap()
-//                .load(mediaController.metadata.description.iconUri)
-//                .into(object : CustomTarget<Bitmap>() {
-//                    override fun onResourceReady(
-//                        resource: Bitmap,
-//                        transition: Transition<in Bitmap>?
-//                    ) {
-//                        callback.onBitmap(resource)
-//                    }
-//                    override fun onLoadCleared(placeholder: Drawable?) = Unit
-//                })
+            val foundAlbumCover = mediaController.metadata.description.iconBitmap
+            Glide.with(context).asBitmap()
+                .load(
+                    foundAlbumCover ?: R.drawable.album_cover_vinylore
+                ) // todo make actual album cover
+                .into(object : CustomTarget<Bitmap>() {
+                    override fun onResourceReady(
+                        resource: Bitmap,
+                        transition: Transition<in Bitmap>?
+                    ) {
+                        callback.onBitmap(resource)
+                    }
+
+                    override fun onLoadCleared(placeholder: Drawable?) = Unit
+                })
             return null  // todo song's big icon
         }
     }

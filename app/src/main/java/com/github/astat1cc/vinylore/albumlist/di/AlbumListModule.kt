@@ -55,7 +55,8 @@ val albumListModule = module {
         AlbumListScreenViewModel(
             interactor = get(),
             dispatchers = get(),
-            errorHandler = get()
+            errorHandler = get(),
+            serviceConnection = get()
         )
     }
 }

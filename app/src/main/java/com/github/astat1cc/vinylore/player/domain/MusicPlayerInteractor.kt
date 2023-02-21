@@ -29,6 +29,8 @@ interface MusicPlayerInteractor {
      */
     suspend fun initializeAlbum()
 
+//    fun clearFlow()
+
     class Impl(
         private val playerRepository: MusicPlayerRepository,
         private val commonRepository: CommonRepository,
@@ -38,12 +40,13 @@ interface MusicPlayerInteractor {
 
         // we need the same instance for viewmodel and service, so we're holding our album
         // in a variable instead of creating and returning new flow every time the function called
-        private val playingAlbum = MutableSharedFlow<FetchResult<AppAlbum?>>(replay = 1)
+        private var playingAlbum = MutableSharedFlow<FetchResult<AppAlbum?>>(replay = 1)
 
         override fun getAlbumFlow(): SharedFlow<FetchResult<AppAlbum?>> =
             playingAlbum.asSharedFlow()
 
         override suspend fun initializeAlbum() {
+//            clearFlow()
             withContext(dispatchers.io()) {
                 try {
                     val albumIdToFetch = playerRepository.getLastPlayingAlbumId()
@@ -117,5 +120,10 @@ interface MusicPlayerInteractor {
 //            }
 //        }
         }
+
+//        override fun clearFlow() {
+//            // todo handle with idiomatic way
+//            playingAlbum = MutableSharedFlow<FetchResult<AppAlbum?>>(replay = 1)
+//        }
     }
 }

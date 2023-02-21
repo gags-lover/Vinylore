@@ -1,19 +1,21 @@
 package com.github.astat1cc.vinylore.core.common_tracklist.data
 
 import android.content.Context
+import android.graphics.BitmapFactory
+import android.media.MediaMetadataRetriever
 import android.net.Uri
-import android.util.Log
 import androidx.documentfile.provider.DocumentFile
 import com.github.astat1cc.vinylore.R
 import com.github.astat1cc.vinylore.core.models.domain.AppAlbum
 import com.github.astat1cc.vinylore.core.models.domain.AppAudioTrack
+import com.github.astat1cc.vinylore.player.ui.util.removeUnderscoresAndPathSegment
 
 interface AppFileProvider {
 
     suspend fun getAlbumListFrom(uri: Uri): List<AppAlbum>
 
     class Impl(
-        private val context: Context,
+        private val context: Context
     ) : AppFileProvider {
 
         override suspend fun getAlbumListFrom(uri: Uri): List<AppAlbum> {
@@ -53,7 +55,23 @@ interface AppFileProvider {
         private fun DocumentFile.getTrackList(): List<AppAudioTrack> =
             listFiles().mapNotNull { file ->
                 if (file.type != null && isAudioType(file.type!!)) {
-                    AppAudioTrack(file.uri.toString(), file.name ?: getDefaultName())
+                    val mmr = MediaMetadataRetriever()
+                    mmr.setDataSource(context, file.uri)
+                    val duration =
+                        mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)
+                            ?.toLong() ?: 0 // todo get image as well
+                    val albumCover = try {
+                        val pic = mmr.embeddedPicture ?: throw Exception()
+                        BitmapFactory.decodeByteArray(pic, 0, pic.size)
+                    } catch (e: Exception) {
+                        null
+                    } // todo handle idiomatic way
+                    AppAudioTrack(
+                        file.uri.toString(),
+                        file.name?.removeUnderscoresAndPathSegment() ?: getDefaultName(),
+                        duration,
+                        albumCover
+                    )
                 } else {
                     null
                 }

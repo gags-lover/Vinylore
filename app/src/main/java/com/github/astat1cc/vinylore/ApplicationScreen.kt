@@ -54,16 +54,20 @@ fun ApplicationScreen() {
             route = NavigationTree.TrackList.name,
             enterTransition = {
                 slideInHorizontally(
-                    initialOffsetX = { it * 3 / 2 },
+                    initialOffsetX = { it  },
                     animationSpec = spring(
-                        stiffness = Spring.StiffnessLow,
+                        stiffness = Spring.StiffnessMediumLow,
                         visibilityThreshold = IntOffset.VisibilityThreshold
                     )
                 )
             },
             exitTransition = {
                 slideOutHorizontally(
-                    targetOffsetX = { it }
+                    targetOffsetX = { it },
+                    animationSpec = spring(
+                        stiffness = Spring.StiffnessMediumLow,
+                        visibilityThreshold = IntOffset.VisibilityThreshold
+                    )
                 )
             }
         ) {

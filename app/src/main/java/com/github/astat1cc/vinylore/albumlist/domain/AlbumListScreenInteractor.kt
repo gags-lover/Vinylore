@@ -1,5 +1,6 @@
 package com.github.astat1cc.vinylore.albumlist.domain
 
+import android.util.Log
 import com.github.astat1cc.vinylore.core.AppErrorHandler
 import com.github.astat1cc.vinylore.core.DispatchersProvider
 import com.github.astat1cc.vinylore.core.common_tracklist.domain.CommonRepository
@@ -58,6 +59,7 @@ interface AlbumListScreenInteractor {
                             FetchResult.Success(data = commonRepository.fetchAlbums())
                         )
                     } catch (e: Exception) {
+                        throw e // todo
                         emit(
                             FetchResult.Fail(error = errorHandler.getErrorTypeOf(e))
                         )

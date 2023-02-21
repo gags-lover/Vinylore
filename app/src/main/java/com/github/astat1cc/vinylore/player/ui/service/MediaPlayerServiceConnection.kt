@@ -28,8 +28,8 @@ class MediaPlayerServiceConnection(
     private val _isConnected = MutableStateFlow<Boolean>(false)
     val isConnected: StateFlow<Boolean> = _isConnected.asStateFlow()
 
-    private val _currentPlayingAudio = MutableStateFlow<AudioTrackUi?>(null)
-    val currentPlayingAudio = _currentPlayingAudio.asStateFlow()
+    private val _currentPlayingTrack = MutableStateFlow<AudioTrackUi?>(null)
+    val currentPlayingTrack = _currentPlayingTrack.asStateFlow()
 
     private val _playingAlbum = MutableStateFlow<AlbumUi?>(null)
     val playingAlbum: StateFlow<AlbumUi?> = _playingAlbum.asStateFlow()
@@ -86,6 +86,7 @@ class MediaPlayerServiceConnection(
 
     fun prepareMedia(album: AlbumUi) {
         emitPlayerState(CustomPlayerState.IDLE)
+        Log.e("prepare", "prepareMedia")
         _playingAlbum.value = album
         mediaBrowser.sendCustomAction(
             Consts.PREPARE_MEDIA_ACTION,
@@ -156,6 +157,11 @@ class MediaPlayerServiceConnection(
         mediaBrowser.sendCustomAction(Consts.REFRESH_MEDIA_PLAY_ACTION, null, null)
     }
 
+    fun clearCurrentPlayingTrack() {
+        _currentPlayingTrack.value = null
+        mediaController
+    }
+
     private inner class MediaBrowserConnectionCallback(
         private val context: Context
     ) : MediaBrowserCompat.ConnectionCallback() {
@@ -187,7 +193,8 @@ class MediaPlayerServiceConnection(
         override fun onMetadataChanged(metadata: MediaMetadataCompat?) {
             super.onMetadataChanged(metadata)
 
-            _currentPlayingAudio.value = metadata?.let {
+            Log.e("metadata", "metadataChanged")
+            _currentPlayingTrack.value = metadata?.let {
                 playingAlbum.value?.trackList?.find { track ->
                     track.uri == metadata.description.mediaUri
                 }

@@ -4,31 +4,35 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.github.astat1cc.vinylore.core.AppErrorHandler
 import com.github.astat1cc.vinylore.core.models.domain.ErrorType
-import com.github.astat1cc.vinylore.core.models.ui.AlbumUi
 import com.github.astat1cc.vinylore.core.models.ui.UiState
 import com.github.astat1cc.vinylore.player.ui.service.MediaPlayerServiceConnection
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.stateIn
+import com.github.astat1cc.vinylore.tracklist.ui.model.TrackListScreenUiStateData
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.*
 
 class TrackListScreenViewModel(
     private val errorHandler: AppErrorHandler,
     serviceConnection: MediaPlayerServiceConnection
 ) : ViewModel() {
 
-    val uiState: StateFlow<UiState<AlbumUi>> =
-        serviceConnection.playingAlbum.map { album ->
+    val uiState: StateFlow<UiState<TrackListScreenUiStateData>> =
+        serviceConnection.playingAlbum.zip(serviceConnection.currentPlayingTrack) { album, currentTrack ->
+            TrackListScreenUiStateData(album, currentTrack)
+        }.map { uiStateData ->
+            // to let animation be smooth without lagging
+            delay(500L)
             when {
-                album == null -> {
+                uiStateData.album == null -> {
                     UiState.Fail(message = errorHandler.getErrorMessage(ErrorType.ALBUM_IS_NOT_CHOSEN))
                 }
-                album.trackList.isEmpty() -> {
+                uiStateData.album.trackList.isEmpty() -> {
                     UiState.Fail(message = errorHandler.getErrorMessage(ErrorType.DIR_IS_EMPTY))
                 }
                 else -> {
-                    UiState.Success(album)
+                    UiState.Success(uiStateData)
                 }
             }
         }.stateIn(viewModelScope, SharingStarted.Lazily, UiState.Loading())
+
+    val isPlaying = serviceConnection.isMusicPlaying // todo move in state
 }

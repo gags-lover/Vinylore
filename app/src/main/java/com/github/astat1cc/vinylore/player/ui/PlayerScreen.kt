@@ -6,17 +6,22 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.Icon
 import androidx.compose.material.MaterialTheme
+import androidx.compose.material.Text
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Alignment.Companion.CenterEnd
 import androidx.compose.ui.Alignment.Companion.CenterHorizontally
 import androidx.compose.ui.Alignment.Companion.CenterStart
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.LifecycleOwner
@@ -26,8 +31,8 @@ import com.github.astat1cc.vinylore.core.models.ui.UiState
 import com.github.astat1cc.vinylore.core.theme.brown
 import com.github.astat1cc.vinylore.navigation.NavigationTree
 import com.github.astat1cc.vinylore.player.ui.tonearm.TonearmAnimated
-import com.github.astat1cc.vinylore.player.ui.vinyl.compose.AudioControl
-import com.github.astat1cc.vinylore.player.ui.vinyl.compose.VinylAnimated
+import com.github.astat1cc.vinylore.player.ui.vinyl.AudioControl
+import com.github.astat1cc.vinylore.player.ui.vinyl.VinylAnimated
 import org.koin.androidx.compose.getViewModel
 
 // todo handle sorting track list
@@ -35,6 +40,7 @@ import org.koin.androidx.compose.getViewModel
 // todo extra spin when pause pressed
 // todo make tonearm move slowly to start position while going to next track
 // todo handle autofocus pause other media services
+// todo when first time chose album albumscreen shows again
 
 @Composable
 fun PlayerScreen(
@@ -48,6 +54,7 @@ fun PlayerScreen(
     val tonearmAnimationState = viewModel.tonearmAnimationState.collectAsState()
     val discRotation = viewModel.discRotation.collectAsState()
     val tonearmRotation = viewModel.tonearmRotation.collectAsState()
+    val currentPlayingTrack = viewModel.currentPlayingTrackName.collectAsState()
 
     val configuration = LocalConfiguration.current
     val vinylSize =
@@ -88,6 +95,7 @@ fun PlayerScreen(
         Box(
             modifier = Modifier.fillMaxWidth()
         ) {
+            // folder choosing view
             Icon(
                 painter = painterResource(R.drawable.ic_folder),
                 contentDescription = null,
@@ -102,6 +110,7 @@ fun PlayerScreen(
                     .size(48.dp)
                     .padding(12.dp)
             )
+            // track list view
             Icon(
                 painter = painterResource(id = R.drawable.ic_list),
                 contentDescription = null, // todo
@@ -135,7 +144,8 @@ fun PlayerScreen(
                 currentRotation = discRotation.value,
                 changeRotation = { newRotation ->
                     viewModel.changeDiscRotationFromAnimation(newRotation)
-                }
+                },
+                albumCover = currentPlayingTrack.value?.albumCover
             )
             TonearmAnimated(
                 modifier = Modifier
@@ -154,31 +164,20 @@ fun PlayerScreen(
                 }
             )
         }
-//        Row {
-//            VinylAnimated(
-//                modifier = Modifier
-//                    .padding(start = 16.dp)
-//                    .width(vinylSize),
-//                discState = discAnimationState.value,
-//                playerStateTransitionFrom = { oldState ->
-//                    viewModel.resumePlayerAnimationStateFrom(oldState)
-//                },
-//                currentRotation = rotation.value,
-//                changeRotation = { newRotation ->
-//                    viewModel.changeDiscRotationFromAnimation(newRotation)
-//                }
-//            )
-//            TonearmAnimated(
-//                modifier = Modifier
-////                    .height(size)
-//                    .padding(end = 16.dp)
-//                    .height(vinylSize),
-//                tonearmState = tonearmAnimationState.value,
-//                tonearmTransition = { oldState ->
-//                    viewModel.resumeTonearmAnimationStateFrom(oldState)
-//                }
-//            )
-//        }
+        // track name view
+        Text(
+            text = currentPlayingTrack.value?.name ?: "",
+            fontSize = 24.sp,
+            minLines = 2,
+            maxLines = 2,
+            fontWeight = FontWeight.Bold,
+            textAlign = TextAlign.Center,
+            modifier = Modifier
+                .padding(start = 20.dp, top = 40.dp, end = 20.dp)
+                .fillMaxWidth(),
+            overflow = TextOverflow.Ellipsis,
+            color = Color.White // todo or vintage paper? and think about everywhere else as well
+        )
         AudioControl(
             modifier = Modifier.align(CenterHorizontally),
             discState = discAnimationState.value,

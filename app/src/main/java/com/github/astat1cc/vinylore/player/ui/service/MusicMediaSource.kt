@@ -67,6 +67,7 @@ class MusicMediaSource(
                         .putString(MediaMetadataCompat.METADATA_KEY_MEDIA_ID, track.uri.toString())
                         .putString(MediaMetadataCompat.METADATA_KEY_MEDIA_URI, track.uri.toString())
                         .putString(MediaMetadataCompat.METADATA_KEY_TITLE, track.name)
+                        .putBitmap(MediaMetadataCompat.METADATA_KEY_DISPLAY_ICON, track.albumCover)
                         .build()
                 }
                 state = AudioSourceState.INITIALIZED

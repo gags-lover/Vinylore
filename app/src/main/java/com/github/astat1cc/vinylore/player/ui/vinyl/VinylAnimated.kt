@@ -1,9 +1,11 @@
-package com.github.astat1cc.vinylore.player.ui.vinyl.compose
+package com.github.astat1cc.vinylore.player.ui.vinyl
 
+import android.graphics.Bitmap
 import androidx.compose.animation.core.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import com.github.astat1cc.vinylore.player.ui.vinyl.VinylDiscState
+import com.github.astat1cc.vinylore.player.ui.vinyl.VinylView
 
 @Composable
 fun VinylAnimated(
@@ -11,7 +13,8 @@ fun VinylAnimated(
     discState: VinylDiscState = VinylDiscState.STOPPED,
     playerStateTransitionFrom: (VinylDiscState) -> Unit,
     currentRotation: Float = 0f,
-    changeRotation: (Float) -> Unit
+    changeRotation: (Float) -> Unit,
+    albumCover: Bitmap?
 ) {
 //    var currentRotation by remember { mutableStateOf(0f) }
 
@@ -57,7 +60,7 @@ fun VinylAnimated(
             }
         }
     }
-    Vinyl(modifier = modifier, rotationDegrees = currentRotation)
+    VinylView(modifier = modifier, rotationDegrees = currentRotation, albumCover)
 }
 
 // 3000 and 1250

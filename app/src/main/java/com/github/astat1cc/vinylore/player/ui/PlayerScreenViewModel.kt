@@ -34,7 +34,10 @@ class PlayerScreenViewModel(
 
     val uiState: StateFlow<UiState<PlayerScreenUiStateData>> =
         interactor.getAlbumFlow()
-            .map { fetchResult -> fetchResult.toUiState() }
+            .map { fetchResult ->
+                Log.e("prepare", "uiState")
+                fetchResult.toUiState()
+            }
             .stateIn(viewModelScope, SharingStarted.Lazily, UiState.Loading())
 
 //    private val _uiState = MutableStateFlow<UiState<PlayerScreenUiStateData>>(UiState.Loading())
@@ -68,8 +71,13 @@ class PlayerScreenViewModel(
         MutableStateFlow(0L)
     val currentPlaybackPosition = _currentPlaybackPosition.asStateFlow()
 
-    private val currentPlayingAudio: StateFlow<AudioTrackUi?> =
-        serviceConnection.currentPlayingAudio
+    val currentPlayingTrackName: StateFlow<AudioTrackUi?> =
+        serviceConnection.currentPlayingTrack.map { track ->
+            // for some reason onMetadataChanged is called before it is actually changed, and
+            // wrong track is emitting for the first moments, so delay let us escape it
+//            delay(750L)
+            track
+        }.stateIn(viewModelScope, SharingStarted.Lazily, null)
 
     private val isConnected: StateFlow<Boolean> =
         serviceConnection.isConnected
@@ -112,6 +120,7 @@ class PlayerScreenViewModel(
                 initialDelayForPlayButtonBlockingPassed = true
             }
             launch {
+                Log.e("prepare", "initializeAlbum")
                 interactor.initializeAlbum()
             }
             launch {
@@ -151,11 +160,11 @@ class PlayerScreenViewModel(
                     if (!should) return@collect
 
                     // to make 100 step road from start to end position of tonearm
-                    var delayTime = currentSongDuration.value / 100
+//                    var delayTime = currentSongDuration.value / 100
+                    var delayTime = 100L
                     // if delayTime is < 100, then song duration < 10 sec, so to escape too
                     // often refreshing and too fast moving of tonearm, better
-                    if (delayTime < 100) delayTime = 100
-//                    while (customPlayerState.value == CustomPlayerState.PLAYING) {
+//                    if (delayTime < 100) delayTime = 100
                     while (true) {
                         _tonearmRotation.value = getRotationFrom(currentAudioProgress.value)
                         Log.e("rotation", "${_tonearmRotation.value}")
@@ -367,6 +376,7 @@ class PlayerScreenViewModel(
 
     fun albumChoosingCalled() {
         _albumChoosingCalled.value = true
+//        interactor.clearFlow()
     }
 
     fun changeTonearmRotationFromAnimation(newRotation: Float) {

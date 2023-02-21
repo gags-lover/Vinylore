@@ -89,7 +89,10 @@ fun AlbumListScreen(
                         )
                     }
                     localState.data.isEmpty() -> {
-                        Text(text = stringResource(id = R.string.dir_is_empty))
+                        Text(
+                            text = stringResource(id = R.string.dir_is_empty),
+                            color = vintagePaper // todo make normal style
+                        )
                     }
                     else -> {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {

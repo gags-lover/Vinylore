@@ -14,9 +14,22 @@ class CommonRepositoryImpl(
     private val dispatchers: DispatchersProvider
 ) : CommonRepository {
 
-    override suspend fun fetchAlbums(): List<AppAlbum>? = withContext(dispatchers.io()) {
+    private var albumsSnapshot: List<AppAlbum>? = null
+
+    override suspend fun fetchAlbums(): List<AppAlbum>? =
+        withContext(dispatchers.io()) {
+            if (albumsSnapshot == null) {
+                initializeAlbums()
+                albumsSnapshot
+            } else {
+                albumsSnapshot
+            }
+        }
+
+    private suspend fun initializeAlbums() {
         val dirPath = sharedPrefs.getString(AppConst.CHOSEN_DIRECTORY_PATH_KEY, null)
-            ?: return@withContext null
-        return@withContext fileProvider.getAlbumListFrom(dirPath.toUri())
+        albumsSnapshot = dirPath?.let {
+            fileProvider.getAlbumListFrom(dirPath.toUri())
+        }
     }
 }

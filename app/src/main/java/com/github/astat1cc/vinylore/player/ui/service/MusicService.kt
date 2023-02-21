@@ -269,6 +269,8 @@ class MusicService : MediaBrowserServiceCompat() {
 
                 currentPlayingMedia = itemToPlay
 
+                Log.e("prepare", "whenReady from prepareFromMediaId")
+
                 preparePlayer(
 //                    mediaMetadata = mediaSource.audioMediaMetadata,
 //                    itemToPlay = itemToPlay,
@@ -307,6 +309,7 @@ class MusicService : MediaBrowserServiceCompat() {
                         repeatMode = Player.REPEAT_MODE_ALL
                         prepare()
                         this.playWhenReady = false
+
                     }
                 }
                 launch {

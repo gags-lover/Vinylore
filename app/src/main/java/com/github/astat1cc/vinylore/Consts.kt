@@ -8,6 +8,8 @@ object Consts {
     const val START_CRACKLE_ACTION = "START_CRACKLE_ACTION"
     const val START_TRACK_PLAYING_ACTION = "START_TRACK_PLAYING_ACTION"
     const val REFRESH_MEDIA_PLAY_ACTION = "REFRESH_MEDIA_PLAY_ACTION"
+    const val MUTE = "MUTE_ACTION"
+    const val UNMUTE = "UNMUTE_ACTION"
     const val PLAYBACK_UPDATE_INTERVAL = 1000L
     const val MY_MEDIA_ROOT_ID = "media_root_id"
 }

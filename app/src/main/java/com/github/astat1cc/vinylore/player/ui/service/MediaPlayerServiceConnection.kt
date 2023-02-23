@@ -10,6 +10,7 @@ import android.util.Log
 import com.github.astat1cc.vinylore.Consts
 import com.github.astat1cc.vinylore.core.models.ui.AlbumUi
 import com.github.astat1cc.vinylore.core.models.ui.AudioTrackUi
+import com.github.astat1cc.vinylore.core.models.ui.UiState
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 
@@ -84,9 +85,16 @@ class MediaPlayerServiceConnection(
 //        emitPlayerState(CustomPlayerState.PLAYING)
     }
 
+    fun muteVolume() {
+        mediaBrowser.sendCustomAction(Consts.MUTE, null, null)
+    }
+
+    fun unmuteVolume() {
+        mediaBrowser.sendCustomAction(Consts.UNMUTE, null, null)
+    }
+
     fun prepareMedia(album: AlbumUi) {
         emitPlayerState(CustomPlayerState.IDLE)
-        Log.e("prepare", "prepareMedia")
         _playingAlbum.value = album
         mediaBrowser.sendCustomAction(
             Consts.PREPARE_MEDIA_ACTION,
@@ -137,6 +145,15 @@ class MediaPlayerServiceConnection(
 
     fun skipToPrevious() {
         transportControl.skipToPrevious()
+    }
+
+    fun skipToQueueItem(id: Long) {
+        Log.e("current", "connection before ${currentPlayingTrack.value?.name}")
+        transportControl.skipToQueueItem(id)
+        connectionScope.launch {
+            delay(3000L)
+            Log.e("current", "connection after ${currentPlayingTrack.value?.name}")
+        }
     }
 
     fun subscribe(
@@ -193,7 +210,6 @@ class MediaPlayerServiceConnection(
         override fun onMetadataChanged(metadata: MediaMetadataCompat?) {
             super.onMetadataChanged(metadata)
 
-            Log.e("metadata", "metadataChanged")
             _currentPlayingTrack.value = metadata?.let {
                 playingAlbum.value?.trackList?.find { track ->
                     track.uri == metadata.description.mediaUri

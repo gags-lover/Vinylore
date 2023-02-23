@@ -1,5 +1,6 @@
 package com.github.astat1cc.vinylore.player.ui.tonearm
 
+import android.util.Log
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Image
 import androidx.compose.runtime.*
@@ -53,13 +54,20 @@ fun TonearmAnimated(
             TonearmState.MOVING_ABOVE_DISC -> {
 //                while (true) {
 //                    val newRotation = VINYL_TRACK_START_TONEARM_ROTATION + audioProgress / 2.85f
-                    rotation.snapTo(currentRotation)
+                rotation.snapTo(currentRotation)
 //                    delay(500L)
 //                }
             }
-            TonearmState.ON_START_POSITION -> {}
-            TonearmState.STAYING_ON_DISC -> {}
+            TonearmState.ON_START_POSITION -> {
+//                if (currentRotation == 0f)
+//                delay(1000L)
+                rotation.snapTo(currentRotation)
+            }
+            TonearmState.STAYING_ON_DISC -> {
+                rotation.snapTo(currentRotation)
+            }
         }
+//        Log.e("state", "in ton anim: $tonearmState, $currentRotation, ${rotation.value}")
     }
     Image(
         modifier = modifier

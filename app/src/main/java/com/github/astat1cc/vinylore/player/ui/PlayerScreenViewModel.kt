@@ -21,7 +21,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
-private const val INITIAL_DELAY_FOR_PLAY_BUTTON_BLOCKING = 1200L
+private const val INITIAL_DELAY_FOR_PLAY_BUTTON_BLOCKING = 750L
 
 // todo when song is changed delay time of progress connecting is still the same as prev one
 // todo when changing album player is not idle
@@ -34,10 +34,7 @@ class PlayerScreenViewModel(
 
     val uiState: StateFlow<UiState<PlayerScreenUiStateData>> =
         interactor.getAlbumFlow()
-            .map { fetchResult ->
-                Log.e("prepare", "uiState")
-                fetchResult.toUiState()
-            }
+            .map { fetchResult -> fetchResult.toUiState() }
             .stateIn(viewModelScope, SharingStarted.Lazily, UiState.Loading())
 
 //    private val _uiState = MutableStateFlow<UiState<PlayerScreenUiStateData>>(UiState.Loading())
@@ -83,6 +80,7 @@ class PlayerScreenViewModel(
         serviceConnection.isConnected
 
     private var updatePosition = true
+    private var updatePositionLoopRequired = true
 
     private lateinit var rootMediaId: String
 
@@ -94,9 +92,10 @@ class PlayerScreenViewModel(
     private val shouldShowSmoothStartAndStopVinylAnimation = MutableStateFlow(false)
 
     val currentSongDuration = MusicService.curSongDuration
-    private val currentAudioProgress = MutableStateFlow<Float>(0f)
+    private val _currentTrackProgress = MutableStateFlow<Float>(0f)
+    val currentTrackProgress: StateFlow<Float> = _currentTrackProgress.asStateFlow()
 
-    private val shouldStartConnectionTonearmRotationWithProgress = MutableStateFlow(false)
+    private var shouldStartConnectionTonearmRotationWithProgress = false
 
     private val subscriptionCallback = object : MediaBrowserCompat.SubscriptionCallback() {
 
@@ -122,13 +121,20 @@ class PlayerScreenViewModel(
             launch {
                 Log.e("prepare", "initializeAlbum")
                 interactor.initializeAlbum()
+                startProgressConnection()
             }
             launch {
                 customPlayerState.collect { state ->
+                    // it should be always false except for PLAYING and PAUSED
+                    shouldStartConnectionTonearmRotationWithProgress = false
                     when (state) {
                         CustomPlayerState.IDLE -> {
                             tryEmitPlayerAnimationState(VinylDiscState.STOPPED)
                             _tonearmAnimationState.value = TonearmState.ON_START_POSITION
+
+                            // because when screen initializing at first state is PLAYING and
+                            // rotation is like when it was connected to progress
+                            _tonearmRotation.value = 0f
 
                             // to escape after-rolling after album changing when u change rotation from animation
 //                        isRotationChangingAble = false
@@ -142,33 +148,17 @@ class PlayerScreenViewModel(
                         CustomPlayerState.PLAYING -> {
                             tryEmitPlayerAnimationState(VinylDiscState.STARTING)
                             _tonearmAnimationState.value = TonearmState.MOVING_ABOVE_DISC
-                            shouldStartConnectionTonearmRotationWithProgress.value = true
+                            shouldStartConnectionTonearmRotationWithProgress = true
                         }
                         CustomPlayerState.PAUSED -> {
                             tryEmitPlayerAnimationState(VinylDiscState.STOPPING)
                             _tonearmAnimationState.value = TonearmState.STAYING_ON_DISC
+                            shouldStartConnectionTonearmRotationWithProgress = true
                         }
                         CustomPlayerState.TURNING_OFF -> {
                             tryEmitPlayerAnimationState(VinylDiscState.STOPPING)
                             _tonearmAnimationState.value = TonearmState.MOVING_TO_IDLE_POSITION
                         }
-                    }
-                }
-            }
-            launch {
-                shouldStartConnectionTonearmRotationWithProgress.collect { should ->
-                    if (!should) return@collect
-
-                    // to make 100 step road from start to end position of tonearm
-//                    var delayTime = currentSongDuration.value / 100
-                    var delayTime = 100L
-                    // if delayTime is < 100, then song duration < 10 sec, so to escape too
-                    // often refreshing and too fast moving of tonearm, better
-//                    if (delayTime < 100) delayTime = 100
-                    while (true) {
-                        _tonearmRotation.value = getRotationFrom(currentAudioProgress.value)
-                        Log.e("rotation", "${_tonearmRotation.value}")
-                        delay(delayTime)
                     }
                 }
             }
@@ -201,6 +191,23 @@ class PlayerScreenViewModel(
         }
     }
 
+    private var tonearmRotationConnectionDelay = 100L
+
+    private suspend fun startProgressConnection() {
+        // to make 100 step road from start to end position of tonearm
+//                    var delayTime = currentSongDuration.value / 100
+        // if delayTime is < 100, then song duration < 10 sec, so to escape too
+        // often refreshing and too fast moving of tonearm, better
+//                    if (delayTime < 100) delayTime = 100
+        while (true) {
+            if (shouldStartConnectionTonearmRotationWithProgress) {
+                _tonearmRotation.value = getRotationFrom(_currentTrackProgress.value)
+//                Log.e("rotation", "${_tonearmRotation.value} ${this@PlayerScreenViewModel.hashCode()}")
+            }
+            delay(tonearmRotationConnectionDelay)
+        }
+    }
+
     private fun getRotationFrom(percentageProgress: Float) =
     // divided by 5.26 to make 100% progress equal to 19 points of rotation, so
         // start rotation amount + this would give end rotation amount
@@ -216,8 +223,7 @@ class PlayerScreenViewModel(
 
     fun playPauseToggle() {
         if (!initialDelayForPlayButtonBlockingPassed) return
-        val uiState = uiState.value
-        if (uiState !is UiState.Success) return // todo handle some error message
+        if (uiState.value !is UiState.Success) return // todo handle some error message
 
         if (customPlayerState.value == CustomPlayerState.IDLE) {
 //            isRotationChangingAble = true
@@ -303,22 +309,38 @@ class PlayerScreenViewModel(
         serviceConnection.skipToPrevious()
     }
 
-    fun seekTo(value: Float) {
-        serviceConnection.transportControl.seekTo(
-            (currentSongDuration.value * value / 100f).toLong()
-        )
+    private var delayChanged = false
+    fun sliderDragging(newValue: Float) {
+        updatePosition = false
+        if (!delayChanged) tonearmRotationConnectionDelay = 15L
+        serviceConnection.muteVolume()
+        _currentTrackProgress.value = newValue
+    }
+
+    fun sliderDraggingFinished() {
+        with(serviceConnection.transportControl) {
+            seekTo(
+                (currentSongDuration.value * currentTrackProgress.value / 100f).toLong()
+            )
+            serviceConnection.unmuteVolume()
+            tonearmRotationConnectionDelay = 100L
+        }
+        delayChanged = false
+        updatePosition = true
     }
 
     private fun updatePlayback() {
         viewModelScope.launch {
-            while (updatePosition) {
-                val position = playbackState.value?.currentPosition ?: 0
-                if (_currentPlaybackPosition.value != position) {
-                    _currentPlaybackPosition.value = position
-                }
-                if (currentSongDuration.value > 0) {
-                    currentAudioProgress.value =
-                        _currentPlaybackPosition.value.toFloat() / currentSongDuration.value.toFloat() * 100f
+            while (updatePositionLoopRequired) {
+                if (updatePosition) {
+                    val position = playbackState.value?.currentPosition ?: 0
+                    if (_currentPlaybackPosition.value != position) {
+                        _currentPlaybackPosition.value = position
+                    }
+                    if (currentSongDuration.value > 0) {
+                        _currentTrackProgress.value =
+                            _currentPlaybackPosition.value.toFloat() / currentSongDuration.value.toFloat() * 100f
+                    }
                 }
                 delay(Consts.PLAYBACK_UPDATE_INTERVAL)
             }
@@ -332,7 +354,7 @@ class PlayerScreenViewModel(
             Consts.MY_MEDIA_ROOT_ID,
             subscriptionCallback
         )
-        updatePosition = false
+        updatePositionLoopRequired = false
     }
 
     fun resumePlayerAnimationStateFrom(oldState: VinylDiscState) {

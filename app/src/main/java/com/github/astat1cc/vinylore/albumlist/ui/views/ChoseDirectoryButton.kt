@@ -18,7 +18,7 @@ import androidx.compose.ui.unit.sp
 import com.github.astat1cc.vinylore.core.theme.vintagePaper
 
 @Composable
-fun ChoseDirectoryView(
+fun ChoseDirectoryButton(
     messageText: String,
     buttonText: String,
     dirChosenListener: (Uri) -> Unit

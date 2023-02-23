@@ -16,9 +16,9 @@ class CommonRepositoryImpl(
 
     private var albumsSnapshot: List<AppAlbum>? = null
 
-    override suspend fun fetchAlbums(): List<AppAlbum>? =
+    override suspend fun fetchAlbums(refresh: Boolean): List<AppAlbum>? =
         withContext(dispatchers.io()) {
-            if (albumsSnapshot == null) {
+            if (albumsSnapshot == null || refresh) {
                 initializeAlbums()
                 albumsSnapshot
             } else {

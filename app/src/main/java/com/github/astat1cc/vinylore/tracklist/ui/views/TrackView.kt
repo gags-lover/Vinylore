@@ -27,7 +27,11 @@ import java.util.concurrent.TimeUnit
 // todo scroll to currently playing track
 
 @Composable
-fun TrackView(track: AudioTrackUi, isCurrentlyPlaying: Boolean) {
+fun TrackView(
+    track: AudioTrackUi,
+    isCurrentlyPlaying: Boolean,
+    onTrackViewClicked: () -> Unit
+) {
     MaterialTheme {
         Row(
             modifier = Modifier
@@ -36,8 +40,10 @@ fun TrackView(track: AudioTrackUi, isCurrentlyPlaying: Boolean) {
                 .clip(RoundedCornerShape(16.dp))
                 .customBackground(isCurrentlyPlaying)
                 .clickable {
-
-                },
+                    onTrackViewClicked()
+                }
+                .padding(vertical = 4.dp)
+            ,
             verticalAlignment = Alignment.CenterVertically
         ) {
             // Track name

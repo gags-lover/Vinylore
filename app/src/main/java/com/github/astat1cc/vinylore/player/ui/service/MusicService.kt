@@ -34,7 +34,7 @@ class MusicService : MediaBrowserServiceCompat() {
     private val dataSourceFactory by inject<CacheDataSource.Factory>()
 
     private val trackExoPlayer by inject<ExoPlayer>()
-    private val crackleExoPLayer by inject<ExoPlayer>()
+    private val crackleExoPlayer by inject<ExoPlayer>()
 
     private val mediaSource by inject<MusicMediaSource>()
 
@@ -109,7 +109,7 @@ class MusicService : MediaBrowserServiceCompat() {
         sync = true
         serviceScope.launch {
             while (sync) {
-                crackleExoPLayer.playWhenReady = trackExoPlayer.playWhenReady
+                crackleExoPlayer.playWhenReady = trackExoPlayer.playWhenReady
                 delay(300L)
             }
         }
@@ -168,8 +168,30 @@ class MusicService : MediaBrowserServiceCompat() {
                 mediaSource.refresh()
                 notifyChildrenChanged(MY_MEDIA_ROOT_ID)
             }
+            Consts.MUTE -> mute()
+            Consts.UNMUTE -> unmute()
             else -> Unit
         }
+    }
+
+    private var savedTrackVolume = 0f
+    private var savedCrackleVolume = 0f
+    private var alreadySaved = false
+    private fun mute() {
+        if (!alreadySaved) {
+            savedTrackVolume = trackExoPlayer.volume
+            savedCrackleVolume = crackleExoPlayer.volume
+            alreadySaved = true
+        }
+        trackExoPlayer.volume = 0f
+        crackleExoPlayer.volume = 0f
+    }
+
+    private fun unmute() {
+        trackExoPlayer.volume = savedTrackVolume
+        crackleExoPlayer.volume = savedCrackleVolume
+        alreadySaved = false
+        Log.e("volume", "${trackExoPlayer.volume} tep, ${crackleExoPlayer.volume} cep")
     }
 
     private fun startTrackPlaying() {
@@ -179,7 +201,7 @@ class MusicService : MediaBrowserServiceCompat() {
 
     private fun startCrackle() {
         stopPlayerSync()
-        crackleExoPLayer.playWhenReady = true
+        crackleExoPlayer.playWhenReady = true
     }
 
     private fun slowlyPause() {
@@ -193,22 +215,22 @@ class MusicService : MediaBrowserServiceCompat() {
                         0.8f + currentSpeed / 10
                     )
                 trackExoPlayer.volume = currentSpeed * 1.2f
-                crackleExoPLayer.volume = currentSpeed
+                crackleExoPlayer.volume = currentSpeed
                 delay(100L)
             }
             trackExoPlayer.playWhenReady = false
-            crackleExoPLayer.playWhenReady = false
+            crackleExoPlayer.playWhenReady = false
 
             // because it seems that app saves params even after closing app
             trackExoPlayer.playbackParameters = PlaybackParameters(1f, 1f)
             trackExoPlayer.volume = 1f
-            crackleExoPLayer.volume = CRACKLE_STANDARD_VOLUME
+            crackleExoPlayer.volume = CRACKLE_STANDARD_VOLUME
         }
     }
 
     private fun slowlyResume() {
         serviceScope.launch {
-            crackleExoPLayer.playWhenReady = true
+            crackleExoPlayer.playWhenReady = true
             trackExoPlayer.playWhenReady = true
             var currentSpeed = 0.1f
             while (currentSpeed < 1) {
@@ -219,12 +241,12 @@ class MusicService : MediaBrowserServiceCompat() {
                         0.8f + currentSpeed / 10
                     )
                 trackExoPlayer.volume = currentSpeed * 2f
-                crackleExoPLayer.volume = currentSpeed * 2f
+                crackleExoPlayer.volume = currentSpeed * 2f
                 delay(100L)
             }
             trackExoPlayer.playbackParameters = PlaybackParameters(1f, 1f)
             trackExoPlayer.volume = 1f
-            crackleExoPLayer.volume = CRACKLE_STANDARD_VOLUME
+            crackleExoPlayer.volume = CRACKLE_STANDARD_VOLUME
         }
     }
 
@@ -235,7 +257,7 @@ class MusicService : MediaBrowserServiceCompat() {
             stop()
             clearMediaItems()
         }
-        with(crackleExoPLayer) {
+        with(crackleExoPlayer) {
             stop()
             clearMediaItems()
         }
@@ -268,8 +290,6 @@ class MusicService : MediaBrowserServiceCompat() {
                 }
 
                 currentPlayingMedia = itemToPlay
-
-                Log.e("prepare", "whenReady from prepareFromMediaId")
 
                 preparePlayer(
 //                    mediaMetadata = mediaSource.audioMediaMetadata,
@@ -313,7 +333,7 @@ class MusicService : MediaBrowserServiceCompat() {
                     }
                 }
                 launch {
-                    with(crackleExoPLayer) {
+                    with(crackleExoPlayer) {
 //                        addListener(PlayerEventListener())
                         setMediaSource(mediaSource.crackleMediaSource(dataSourceFactory))
                         repeatMode = Player.REPEAT_MODE_ONE

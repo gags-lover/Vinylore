@@ -31,7 +31,7 @@ class AlbumListScreenViewModel(
     init {
         enableAlbumsScan()
         viewModelScope.launch {
-            interactor.fetchAlbums().collect { fetchResult ->
+            interactor.fetchAlbums(refresh = true).collect { fetchResult ->
                 _uiState.value = fetchResult.toUiState()
             }
         }

@@ -16,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -35,11 +36,10 @@ fun TrackListScreen(
     viewModel: TrackListScreenViewModel = getViewModel()
 ) {
     val uiState = viewModel.uiState.collectAsState()
-    val isPlaying = viewModel.isPlaying.collectAsState()
     val localState = uiState.value
 
     Column(modifier = Modifier.background(vintagePaper)) {
-        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        Box(modifier = Modifier.fillMaxWidth()) {
             // back button
             Icon(
                 painter = painterResource(R.drawable.ic_arrow_back),
@@ -47,7 +47,7 @@ fun TrackListScreen(
                 tint = brown,
                 modifier = Modifier
                     .padding(start = 4.dp, top = 4.dp)
-//                    .align(Alignment.Start)
+                    .align(Alignment.CenterStart)
                     .clip(CircleShape)
                     .clickable(onClick = {
                         navController.navigateUp()
@@ -55,26 +55,24 @@ fun TrackListScreen(
                     .size(48.dp)
                     .padding(12.dp)
             )
-            if (localState is UiState.Success) {
-                Text(
-                    text = localState.data.album?.name ?: "",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 22.sp,
-                    maxLines = 1,
-                    color = Color.Black,
-                    modifier = Modifier
-                        .padding(
+            // Track list text
+            Text(
+                text = stringResource(R.string.track_list),
+                fontWeight = FontWeight.Bold,
+                fontSize = 22.sp,
+                maxLines = 1,
+                color = Color.Black,
+                modifier = Modifier
+                    .padding(
 //                            top = 8.dp,
-                            start = 8.dp,
-                            end = 16.dp,
+                        horizontal = 8.dp,
 //                            bottom = 20.dp
-                        )
-                        .fillMaxWidth()
-                        .weight(1f),
-                    textAlign = TextAlign.Center,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
+                    )
+                    .fillMaxWidth()
+                    .align(Alignment.Center),
+                textAlign = TextAlign.Center,
+                overflow = TextOverflow.Ellipsis,
+            )
         }
         Box(
             modifier = Modifier.fillMaxSize(),
@@ -83,14 +81,14 @@ fun TrackListScreen(
             when (localState) {
                 is UiState.Success -> {
                     LazyColumn(contentPadding = PaddingValues(vertical = 20.dp)) {
-                        item {
-
-                        }
                         val trackList = localState.data.album!!.trackList
                         items(trackList) { track ->
                             TrackView(
                                 track,
-                                track == localState.data.currentPlayingTrack
+                                track == localState.data.currentPlayingTrack,
+                                onTrackViewClicked = {
+                                    viewModel.skipToQueueItem(trackList.indexOf(track).toLong())
+                                }
                             )
                         }
                     }

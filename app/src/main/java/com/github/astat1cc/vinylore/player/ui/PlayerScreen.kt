@@ -4,24 +4,29 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.Icon
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Text
-import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment.Companion.CenterEnd
+import androidx.compose.material.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.Alignment.Companion.Center
 import androidx.compose.ui.Alignment.Companion.CenterHorizontally
 import androidx.compose.ui.Alignment.Companion.CenterStart
+import androidx.compose.ui.Alignment.Companion.CenterVertically
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.LifecycleOwner
@@ -29,6 +34,7 @@ import androidx.navigation.NavHostController
 import com.github.astat1cc.vinylore.R
 import com.github.astat1cc.vinylore.core.models.ui.UiState
 import com.github.astat1cc.vinylore.core.theme.brown
+import com.github.astat1cc.vinylore.core.theme.vintagePaper
 import com.github.astat1cc.vinylore.navigation.NavigationTree
 import com.github.astat1cc.vinylore.player.ui.tonearm.TonearmAnimated
 import com.github.astat1cc.vinylore.player.ui.vinyl.AudioControl
@@ -55,6 +61,7 @@ fun PlayerScreen(
     val discRotation = viewModel.discRotation.collectAsState()
     val tonearmRotation = viewModel.tonearmRotation.collectAsState()
     val currentPlayingTrack = viewModel.currentPlayingTrackName.collectAsState()
+    val trackProgress = viewModel.currentTrackProgress.collectAsState()
 
     val configuration = LocalConfiguration.current
     val vinylSize =
@@ -87,12 +94,29 @@ fun PlayerScreen(
         }
     }
 
+    // track preparing loading view
+    if (localState is UiState.Loading) {
+        Dialog(onDismissRequest = {}) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Center) {
+                Column(horizontalAlignment = CenterHorizontally) {
+                    CircularProgressIndicator(color = vintagePaper)
+                    Text(
+                        modifier = Modifier.padding(top = 8.dp),
+                        text = stringResource(R.string.preparing_media),
+                        color = vintagePaper,
+                        fontSize = 18.sp,
+                    )
+                }
+            }
+        }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(brown)
     ) {
-        Box(
+        Row(
             modifier = Modifier.fillMaxWidth()
         ) {
             // folder choosing view
@@ -102,13 +126,33 @@ fun PlayerScreen(
                 tint = MaterialTheme.colors.onPrimary,
                 modifier = Modifier
                     .padding(start = 4.dp, top = 4.dp)
-                    .align(CenterStart)
+                    .align(CenterVertically)
                     .clip(CircleShape)
                     .clickable(onClick = {
                         navController.navigate(NavigationTree.AlbumList.name)
                     })
                     .size(48.dp)
                     .padding(12.dp)
+            )
+            // album name
+            Text(
+                text = if (localState is UiState.Success) localState.data.album?.name?.uppercase()
+                    ?: "" else "",
+                fontWeight = FontWeight.Bold,
+                fontSize = 22.sp,
+                maxLines = 1,
+                color = Color.White,
+                modifier = Modifier
+                    .padding(
+//                            top = 8.dp,
+                        horizontal = 8.dp,
+//                            bottom = 20.dp
+                    )
+                    .fillMaxWidth()
+                    .weight(1f)
+                    .align(CenterVertically),
+                textAlign = TextAlign.Center,
+                overflow = TextOverflow.Ellipsis,
             )
             // track list view
             Icon(
@@ -117,7 +161,7 @@ fun PlayerScreen(
                 tint = MaterialTheme.colors.onPrimary,
                 modifier = Modifier
                     .padding(end = 4.dp, top = 4.dp)
-                    .align(CenterEnd)
+                    .align(CenterVertically)
                     .clip(CircleShape)
                     .clickable(onClick = {
                         navController.navigate(NavigationTree.TrackList.name) {
@@ -131,7 +175,11 @@ fun PlayerScreen(
                     .padding(12.dp)
             )
         }
-        Box(modifier = Modifier.align(CenterHorizontally)) {
+        Box(
+            modifier = Modifier
+                .align(CenterHorizontally)
+                .padding(top = 16.dp)
+        ) {
             VinylAnimated(
                 modifier = Modifier
                     .padding(start = 16.dp)
@@ -150,7 +198,7 @@ fun PlayerScreen(
             TonearmAnimated(
                 modifier = Modifier
 //                    .height(size)
-                    .padding(start = vinylSize)
+                    .padding(start = vinylSize) // todo maybe row
                     .height(vinylSize)
                     .align(CenterStart),
                 currentRotation = tonearmRotation.value,
@@ -177,6 +225,27 @@ fun PlayerScreen(
                 .fillMaxWidth(),
             overflow = TextOverflow.Ellipsis,
             color = Color.White // todo or vintage paper? and think about everywhere else as well
+        )
+        // progress slider
+        Slider(
+            modifier = Modifier.padding(horizontal = 36.dp),
+            value = trackProgress.value,
+            onValueChangeFinished = {
+                viewModel.sliderDraggingFinished()
+            },
+            onValueChange = { newValue ->
+                viewModel.sliderDragging(newValue)
+            },
+
+            //it means user have already launched player, so seeking should be available
+            enabled = tonearmRotation.value >= PlayerScreenViewModel.VINYL_TRACK_START_TONEARM_ROTATION,
+
+            valueRange = 0f..100f,
+            colors = SliderDefaults.colors(
+                thumbColor = Color.White,
+                activeTrackColor = Color.White,
+                inactiveTickColor = vintagePaper
+            )
         )
         AudioControl(
             modifier = Modifier.align(CenterHorizontally),

@@ -10,6 +10,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import androidx.navigation.NavOptions
 import com.github.astat1cc.vinylore.R
@@ -17,7 +18,7 @@ import com.github.astat1cc.vinylore.albumlist.ui.views.AlbumListHeader
 import com.github.astat1cc.vinylore.navigation.NavigationTree
 import com.github.astat1cc.vinylore.core.models.ui.UiState
 import com.github.astat1cc.vinylore.albumlist.ui.views.AlbumView
-import com.github.astat1cc.vinylore.albumlist.ui.views.ChoseDirectoryView
+import com.github.astat1cc.vinylore.albumlist.ui.views.ChoseDirectoryButton
 import com.github.astat1cc.vinylore.core.theme.vintagePaper
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.getViewModel
@@ -56,7 +57,7 @@ fun AlbumListScreen(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
             ) {
-                ChoseDirectoryView(
+                ChoseDirectoryButton(
                     messageText = localState.message,
                     buttonText = stringResource(R.string.try_again),
                     dirChosenListener = { chosenUri ->
@@ -70,7 +71,17 @@ fun AlbumListScreen(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
             ) {
-                CircularProgressIndicator(color = vintagePaper)
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        CircularProgressIndicator(color = vintagePaper)
+                        Text(
+                            modifier = Modifier.padding(top = 8.dp),
+                            text = stringResource(R.string.scanning_folders),
+                            color = vintagePaper,
+                            fontSize = 18.sp,
+                        )
+                    }
+                }
             }
         }
         is UiState.Success -> {
@@ -80,7 +91,7 @@ fun AlbumListScreen(
             ) {
                 when {
                     localState.data == null -> {
-                        ChoseDirectoryView(
+                        ChoseDirectoryButton(
                             messageText = stringResource(id = R.string.you_should_chose_dir),
                             buttonText = stringResource(id = R.string.chose_dir),
                             dirChosenListener = { chosenUri ->

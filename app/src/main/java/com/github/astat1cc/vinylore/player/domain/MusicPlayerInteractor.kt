@@ -1,6 +1,5 @@
 package com.github.astat1cc.vinylore.player.domain
 
-import android.util.Log
 import com.github.astat1cc.vinylore.core.AppErrorHandler
 import com.github.astat1cc.vinylore.core.DispatchersProvider
 import com.github.astat1cc.vinylore.core.common_tracklist.domain.CommonRepository
@@ -50,9 +49,10 @@ interface MusicPlayerInteractor {
             withContext(dispatchers.io()) {
                 try {
                     val albumIdToFetch = playerRepository.getLastPlayingAlbumId()
-                    val albumFound: AppAlbum? = commonRepository.fetchAlbums()?.find { album ->
-                        album.id == albumIdToFetch
-                    }
+                    val albumFound: AppAlbum? =
+                        commonRepository.fetchAlbums(refresh = false)?.find { album ->
+                            album.id == albumIdToFetch
+                        }
                     playingAlbum.emit(
                         FetchResult.Success(data = albumFound)
                     )

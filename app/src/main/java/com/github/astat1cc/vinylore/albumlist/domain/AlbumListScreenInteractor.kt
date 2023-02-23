@@ -1,6 +1,5 @@
 package com.github.astat1cc.vinylore.albumlist.domain
 
-import android.util.Log
 import com.github.astat1cc.vinylore.core.AppErrorHandler
 import com.github.astat1cc.vinylore.core.DispatchersProvider
 import com.github.astat1cc.vinylore.core.common_tracklist.domain.CommonRepository
@@ -17,7 +16,7 @@ interface AlbumListScreenInteractor {
 
     suspend fun saveChosenPlayingAlbum(albumId: Int)
 
-    fun fetchAlbums(): Flow<FetchResult<List<AppAlbum>?>>
+    fun fetchAlbums(refresh: Boolean): Flow<FetchResult<List<AppAlbum>?>>
 
     fun disableAlbumsScan()
 
@@ -51,12 +50,12 @@ interface AlbumListScreenInteractor {
 //                FetchResult.Fail(error = errorHandler.getErrorTypeOf(e))
 //            }
 
-        override fun fetchAlbums(): Flow<FetchResult<List<AppAlbum>?>> = flow {
+        override fun fetchAlbums(refresh: Boolean): Flow<FetchResult<List<AppAlbum>?>> = flow {
             while (true) {
                 if (needToCheckAlbumList) {
                     try {
                         emit(
-                            FetchResult.Success(data = commonRepository.fetchAlbums())
+                            FetchResult.Success(data = commonRepository.fetchAlbums(refresh))
                         )
                     } catch (e: Exception) {
                         throw e // todo

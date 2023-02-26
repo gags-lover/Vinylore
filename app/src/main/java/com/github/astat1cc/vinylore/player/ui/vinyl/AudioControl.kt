@@ -27,7 +27,6 @@ fun AudioControl(
     clickTogglePlayPause: () -> Unit,
     clickSkipNext: () -> Unit,
     clickSkipPrevious: () -> Unit,
-    clickChangeRepeatMode: () -> Unit
 ) {
     val buttonStandardSize = 56.dp
     val buttonStandardModifier = Modifier

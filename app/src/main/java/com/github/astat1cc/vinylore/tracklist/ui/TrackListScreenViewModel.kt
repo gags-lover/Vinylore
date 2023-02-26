@@ -7,6 +7,7 @@ import com.github.astat1cc.vinylore.core.AppErrorHandler
 import com.github.astat1cc.vinylore.core.models.domain.ErrorType
 import com.github.astat1cc.vinylore.core.models.ui.AudioTrackUi
 import com.github.astat1cc.vinylore.core.models.ui.UiState
+import com.github.astat1cc.vinylore.player.ui.service.CustomPlayerState
 import com.github.astat1cc.vinylore.player.ui.service.MediaPlayerServiceConnection
 import com.github.astat1cc.vinylore.tracklist.ui.model.TrackListScreenUiStateData
 import kotlinx.coroutines.delay
@@ -37,7 +38,30 @@ class TrackListScreenViewModel(
             }
         }.stateIn(viewModelScope, SharingStarted.Lazily, UiState.Loading())
 
-    fun skipToQueueItem(id: Long) {
+    private val isMusicPlaying: StateFlow<Boolean> = serviceConnection.isMusicPlaying
+
+    private val customPlayerState: StateFlow<CustomPlayerState> =
+        serviceConnection.customPlayerState
+
+    fun skipToQueueItem(id: Long, track: AudioTrackUi) {
+        val state = uiState.value
+        if (state is UiState.Success && state.data.currentPlayingTrack == track) {
+            togglePlayPause()
+            return
+        }
         serviceConnection.skipToQueueItem(id)
+    }
+
+    private fun togglePlayPause() {
+        if (customPlayerState.value == CustomPlayerState.IDLE) {
+            // not slowly launching player to not to confuse user with delay with no player shown
+            serviceConnection.transportControl.play()
+        } else {
+            if (isMusicPlaying.value) {
+                serviceConnection.slowPause()
+            } else {
+                serviceConnection.slowResume()
+            }
+        }
     }
 }

@@ -2,6 +2,7 @@ package com.github.astat1cc.vinylore.albumlist.ui.views
 
 import android.content.Intent
 import android.net.Uri
+import androidx.activity.compose.ManagedActivityResultLauncher
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Column
@@ -21,19 +22,8 @@ import com.github.astat1cc.vinylore.core.theme.vintagePaper
 fun ChoseDirectoryButton(
     messageText: String,
     buttonText: String,
-    dirChosenListener: (Uri) -> Unit
+    getDirLauncher: ManagedActivityResultLauncher<Uri?, Uri?>
 ) {
-    val contentResolver = LocalContext.current.contentResolver
-    val takeFlags: Int = Intent.FLAG_GRANT_READ_URI_PERMISSION or
-            Intent.FLAG_GRANT_WRITE_URI_PERMISSION
-
-    val getDirLauncher =
-        rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { chosenDirUri ->
-            if (chosenDirUri == null) return@rememberLauncherForActivityResult
-            contentResolver.takePersistableUriPermission(chosenDirUri, takeFlags)
-            dirChosenListener(chosenDirUri)
-        }
-
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(
             modifier = Modifier.padding(horizontal = 8.dp),

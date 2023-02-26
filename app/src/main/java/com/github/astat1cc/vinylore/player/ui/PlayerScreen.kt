@@ -8,8 +8,6 @@ import androidx.compose.material.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment.Companion.Center
 import androidx.compose.ui.Alignment.Companion.CenterHorizontally
 import androidx.compose.ui.Alignment.Companion.CenterStart
@@ -62,6 +60,7 @@ fun PlayerScreen(
     val tonearmRotation = viewModel.tonearmRotation.collectAsState()
     val currentPlayingTrack = viewModel.currentPlayingTrackName.collectAsState()
     val trackProgress = viewModel.currentTrackProgress.collectAsState()
+    val tonearmLifted = viewModel.tonearmLifted.collectAsState()
 
     val configuration = LocalConfiguration.current
     val vinylSize =
@@ -209,7 +208,8 @@ fun PlayerScreen(
                 changeRotation = { newRotation ->
                     viewModel.changeTonearmRotationFromAnimation(newRotation)
 
-                }
+                },
+                tonearmLifted = tonearmLifted.value
             )
         }
         // track name view
@@ -257,8 +257,7 @@ fun PlayerScreen(
                 viewModel.playPauseToggle()
             },
             clickSkipPrevious = { viewModel.skipToPrevious() },
-            clickSkipNext = { viewModel.skipToNext() },
-            clickChangeRepeatMode = {}
+            clickSkipNext = { viewModel.skipToNext() }
         )
     }
 }

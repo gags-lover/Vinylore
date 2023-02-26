@@ -42,8 +42,7 @@ fun TrackView(
                 .clickable {
                     onTrackViewClicked()
                 }
-                .padding(vertical = 4.dp)
-            ,
+                .padding(vertical = 2.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             // Track name

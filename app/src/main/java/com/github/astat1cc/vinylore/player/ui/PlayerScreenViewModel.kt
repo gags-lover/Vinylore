@@ -21,7 +21,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
-private const val INITIAL_DELAY_FOR_PLAY_BUTTON_BLOCKING = 750L
+private const val INITIAL_DELAY_FOR_PLAY_BUTTON_BLOCKING = 1000L
 
 // todo when song is changed delay time of progress connecting is still the same as prev one
 // todo when changing album player is not idle
@@ -109,6 +109,9 @@ class PlayerScreenViewModel(
 
     private var initialDelayForPlayButtonBlockingPassed = false
 
+    private var _tonearmLifted = MutableStateFlow(false)
+    val tonearmLifted: StateFlow<Boolean> = _tonearmLifted.asStateFlow()
+
     init {
         updatePlayback()
         with(viewModelScope) {
@@ -125,8 +128,6 @@ class PlayerScreenViewModel(
             }
             launch {
                 customPlayerState.collect { state ->
-                    // it should be always false except for PLAYING and PAUSED
-                    shouldStartConnectionTonearmRotationWithProgress = false
                     when (state) {
                         CustomPlayerState.IDLE -> {
                             tryEmitPlayerAnimationState(VinylDiscState.STOPPED)
@@ -136,28 +137,33 @@ class PlayerScreenViewModel(
                             // rotation is like when it was connected to progress
                             _tonearmRotation.value = 0f
 
-                            // to escape after-rolling after album changing when u change rotation from animation
-//                        isRotationChangingAble = false
-
+                            shouldStartConnectionTonearmRotationWithProgress = false
                             _discRotation.value = 0f
+                            _tonearmLifted.value = true
                         }
                         CustomPlayerState.LAUNCHING -> {
                             tryEmitPlayerAnimationState(VinylDiscState.STARTING)
                             _tonearmAnimationState.value = TonearmState.MOVING_TO_START_POSITION
+                            shouldStartConnectionTonearmRotationWithProgress = false
+                            _tonearmLifted.value = true
                         }
                         CustomPlayerState.PLAYING -> {
                             tryEmitPlayerAnimationState(VinylDiscState.STARTING)
                             _tonearmAnimationState.value = TonearmState.MOVING_ABOVE_DISC
                             shouldStartConnectionTonearmRotationWithProgress = true
+                            _tonearmLifted.value = false
                         }
                         CustomPlayerState.PAUSED -> {
                             tryEmitPlayerAnimationState(VinylDiscState.STOPPING)
                             _tonearmAnimationState.value = TonearmState.STAYING_ON_DISC
                             shouldStartConnectionTonearmRotationWithProgress = true
+                            _tonearmLifted.value = false
                         }
                         CustomPlayerState.TURNING_OFF -> {
                             tryEmitPlayerAnimationState(VinylDiscState.STOPPING)
                             _tonearmAnimationState.value = TonearmState.MOVING_TO_IDLE_POSITION
+                            shouldStartConnectionTonearmRotationWithProgress = false
+                            _tonearmLifted.value = true
                         }
                     }
                 }
@@ -309,10 +315,12 @@ class PlayerScreenViewModel(
         serviceConnection.skipToPrevious()
     }
 
-    private var delayChanged = false
     fun sliderDragging(newValue: Float) {
         updatePosition = false
-        if (!delayChanged) tonearmRotationConnectionDelay = 15L
+        if (!tonearmLifted.value) {
+            tonearmRotationConnectionDelay = 15L
+            _tonearmLifted.value = true
+        }
         serviceConnection.muteVolume()
         _currentTrackProgress.value = newValue
     }
@@ -325,7 +333,7 @@ class PlayerScreenViewModel(
             serviceConnection.unmuteVolume()
             tonearmRotationConnectionDelay = 100L
         }
-        delayChanged = false
+        _tonearmLifted.value = false
         updatePosition = true
     }
 

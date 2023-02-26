@@ -84,10 +84,10 @@ fun TrackListScreen(
                         val trackList = localState.data.album!!.trackList
                         items(trackList) { track ->
                             TrackView(
-                                track,
-                                track == localState.data.currentPlayingTrack,
+                                track = track,
+                                isCurrentlyPlaying = track == localState.data.currentPlayingTrack,
                                 onTrackViewClicked = {
-                                    viewModel.skipToQueueItem(trackList.indexOf(track).toLong())
+                                    viewModel.skipToQueueItem(trackList.indexOf(track).toLong(), track)
                                 }
                             )
                         }

@@ -121,9 +121,9 @@ class MediaPlayerServiceConnection(
         connectionScope.launch {
             delay(3200L)
             mediaBrowser.sendCustomAction(Consts.START_CRACKLE_ACTION, null, null)
+            emitPlayerState(CustomPlayerState.PLAYING)
             delay(2500L)
             mediaBrowser.sendCustomAction(Consts.START_TRACK_PLAYING_ACTION, null, null)
-            emitPlayerState(CustomPlayerState.PLAYING)
         }
     }
 
@@ -148,12 +148,7 @@ class MediaPlayerServiceConnection(
     }
 
     fun skipToQueueItem(id: Long) {
-        Log.e("current", "connection before ${currentPlayingTrack.value?.name}")
         transportControl.skipToQueueItem(id)
-        connectionScope.launch {
-            delay(3000L)
-            Log.e("current", "connection after ${currentPlayingTrack.value?.name}")
-        }
     }
 
     fun subscribe(

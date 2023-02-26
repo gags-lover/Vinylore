@@ -1,5 +1,9 @@
 package com.github.astat1cc.vinylore.albumlist.ui
 
+import android.content.Intent
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -8,6 +12,7 @@ import androidx.compose.material.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -35,10 +40,24 @@ fun AlbumListScreen(
     val uiState = viewModel.uiState.collectAsState()
     val localCoroutineScope = rememberCoroutineScope()
 
-    val albumClickProcessing = remember { mutableStateOf(false) }
+    val contentResolver = LocalContext.current.contentResolver
+    val takeFlags: Int = Intent.FLAG_GRANT_READ_URI_PERMISSION or
+            Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+    val dirChosenListener: (Uri) -> Unit = { chosenUri ->
+        viewModel.handleChosenDirUri(chosenUri)
+        viewModel.enableAlbumsScan()
+    }
+    val getDirLauncher =
+        rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { chosenDirUri ->
+            if (chosenDirUri == null) return@rememberLauncherForActivityResult
+            contentResolver.takePersistableUriPermission(chosenDirUri, takeFlags)
+            dirChosenListener(chosenDirUri)
+        }
+
+    val albumClickIsProcessing = remember { mutableStateOf(false) }
     fun onAlbumClick(albumId: Int) {
-        if (albumClickProcessing.value) return
-        albumClickProcessing.value = true
+        if (albumClickIsProcessing.value) return
+        albumClickIsProcessing.value = true
         localCoroutineScope.launch {
             viewModel.saveChosenPlayingAlbum(albumId).join()
             // todo add animation: mockup going to the right to indicate where track list is now
@@ -60,9 +79,7 @@ fun AlbumListScreen(
                 ChoseDirectoryButton(
                     messageText = localState.message,
                     buttonText = stringResource(R.string.try_again),
-                    dirChosenListener = { chosenUri ->
-                        viewModel.handleChosenDirUri(chosenUri)
-                    }
+                    getDirLauncher = getDirLauncher
                 )
             }
         }
@@ -94,9 +111,7 @@ fun AlbumListScreen(
                         ChoseDirectoryButton(
                             messageText = stringResource(id = R.string.you_should_chose_dir),
                             buttonText = stringResource(id = R.string.chose_dir),
-                            dirChosenListener = { chosenUri ->
-                                viewModel.handleChosenDirUri(chosenUri)
-                            }
+                            getDirLauncher = getDirLauncher
                         )
                     }
                     localState.data.isEmpty() -> {
@@ -108,7 +123,8 @@ fun AlbumListScreen(
                     else -> {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             AlbumListHeader(
-                                refreshButtonListener = { viewModel.enableAlbumsScan() }
+                                refreshButtonListener = { viewModel.enableAlbumsScan() },
+                                getDirLauncher = getDirLauncher
                             )
                             LazyRow(
                                 modifier = Modifier

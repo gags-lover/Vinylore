@@ -1,4 +1,4 @@
-package com.github.astat1cc.vinylore.player.ui.vinyl
+package com.github.astat1cc.vinylore.player.ui.views.vinyl
 
 import android.graphics.Bitmap
 import androidx.compose.foundation.Image
@@ -12,11 +12,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.tooling.preview.Preview
 import com.github.astat1cc.vinylore.R
-import com.github.astat1cc.vinylore.player.ui.vinyl.VinylShape
 
 @Composable
 fun VinylView(

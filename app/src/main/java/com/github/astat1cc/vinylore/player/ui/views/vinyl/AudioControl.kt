@@ -1,4 +1,4 @@
-package com.github.astat1cc.vinylore.player.ui.vinyl
+package com.github.astat1cc.vinylore.player.ui.views.vinyl
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -17,7 +17,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.github.astat1cc.vinylore.R
 import com.github.astat1cc.vinylore.core.theme.brown
-import com.github.astat1cc.vinylore.player.ui.vinyl.VinylDiscState
 
 @Composable
 fun AudioControl(
@@ -30,7 +29,7 @@ fun AudioControl(
 ) {
     val buttonStandardSize = 56.dp
     val buttonStandardModifier = Modifier
-        .padding(vertical = 40.dp, horizontal = 8.dp)
+        .padding(vertical = 32.dp, horizontal = 8.dp)
         .size(buttonStandardSize)
         .clip(CircleShape)
     Row(modifier = modifier, verticalAlignment = Alignment.CenterVertically) {

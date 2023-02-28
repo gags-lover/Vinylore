@@ -1,6 +1,4 @@
-package com.github.astat1cc.vinylore.player.ui.util
-
-import android.util.Log
+package com.github.astat1cc.vinylore.core.util
 
 //interface TrackNameConverterUtils {
 //

@@ -20,6 +20,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.github.astat1cc.vinylore.R
 import com.github.astat1cc.vinylore.core.models.ui.AlbumUi
+import com.github.astat1cc.vinylore.player.ui.views.vinyl.VinylView
 
 @Composable
 fun AlbumView(
@@ -36,14 +37,32 @@ fun AlbumView(
                 },
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Image(
-                painter = painterResource(R.drawable.album),
-                contentDescription = "",
-                modifier = Modifier
-                    .width(180.dp)
-                    .clipToBounds(),
-                contentScale = ContentScale.FillWidth,
-            )
+            Box(
+                contentAlignment = Alignment.Center
+            ) {
+                VinylView(
+                    modifier = Modifier
+                        .padding(start = 52.dp)
+                        .height(100.dp),
+                    albumCover = null
+                )
+                Image(
+                    painter = painterResource(R.drawable.album_mockup),
+                    contentDescription = "",
+                    modifier = Modifier
+                        .width(160.dp)
+                        .clipToBounds(),
+                    contentScale = ContentScale.FillWidth,
+                )
+            }
+//            Image(
+//                painter = painterResource(R.drawable.album),
+//                contentDescription = "",
+//                modifier = Modifier
+//                    .width(180.dp)
+//                    .clipToBounds(),
+//                contentScale = ContentScale.FillWidth,
+//            )
             Text(
                 text = album.name ?: stringResource(id = R.string.unknown_name),
                 minLines = 2,

@@ -14,8 +14,8 @@ import com.github.astat1cc.vinylore.core.models.ui.AudioTrackUi
 import com.github.astat1cc.vinylore.player.domain.MusicPlayerInteractor
 import com.github.astat1cc.vinylore.player.ui.models.PlayerScreenUiStateData
 import com.github.astat1cc.vinylore.player.ui.service.*
-import com.github.astat1cc.vinylore.player.ui.tonearm.TonearmState
-import com.github.astat1cc.vinylore.player.ui.vinyl.VinylDiscState
+import com.github.astat1cc.vinylore.player.ui.views.tonearm.TonearmState
+import com.github.astat1cc.vinylore.player.ui.views.vinyl.VinylDiscState
 import com.github.astat1cc.vinylore.core.models.ui.UiState
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*

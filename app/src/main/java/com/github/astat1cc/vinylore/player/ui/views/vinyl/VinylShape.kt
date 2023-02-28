@@ -1,4 +1,4 @@
-package com.github.astat1cc.vinylore.player.ui.vinyl
+package com.github.astat1cc.vinylore.player.ui.views.vinyl
 
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size

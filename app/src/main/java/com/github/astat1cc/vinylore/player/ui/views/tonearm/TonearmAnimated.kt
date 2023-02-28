@@ -1,12 +1,13 @@
-package com.github.astat1cc.vinylore.player.ui.tonearm
+package com.github.astat1cc.vinylore.player.ui.views.tonearm
 
-import android.util.Log
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.*
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.TransformOrigin
@@ -57,24 +58,17 @@ fun TonearmAnimated(
                 }
             }
             TonearmState.MOVING_ABOVE_DISC -> {
-//                while (true) {
-//                    val newRotation = VINYL_TRACK_START_TONEARM_ROTATION + audioProgress / 2.85f
                 rotation.snapTo(currentRotation)
-//                    delay(500L)
-//                }
             }
             TonearmState.ON_START_POSITION -> {
-//                if (currentRotation == 0f)
-//                delay(1000L)
                 rotation.snapTo(currentRotation)
             }
             TonearmState.STAYING_ON_DISC -> {
                 rotation.snapTo(currentRotation)
             }
         }
-//        Log.e("state", "in ton anim: $tonearmState, $currentRotation, ${rotation.value}")
     }
-    Box {
+    Box(modifier = modifier) {
         // additional shadow
         AnimatedVisibility(
             visible = tonearmLifted,
@@ -82,7 +76,8 @@ fun TonearmAnimated(
             exit = fadeOut()
         ) {
             Image(
-                modifier = modifier
+                modifier = Modifier
+                    .fillMaxHeight()
                     .graphicsLayer(
                         transformOrigin = TransformOrigin(
                             pivotFractionX = 0.59f,
@@ -97,7 +92,8 @@ fun TonearmAnimated(
         }
         // tonearm
         Image(
-            modifier = modifier
+            modifier = Modifier
+                .fillMaxHeight()
                 .graphicsLayer(
                     transformOrigin = TransformOrigin(
                         pivotFractionX = 0.59f,

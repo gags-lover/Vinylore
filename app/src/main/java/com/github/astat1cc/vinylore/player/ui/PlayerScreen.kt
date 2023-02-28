@@ -1,8 +1,13 @@
 package com.github.astat1cc.vinylore.player.ui
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import android.content.res.Configuration
+import androidx.compose.foundation.*
+import androidx.compose.foundation.gestures.rememberScrollableState
+import androidx.compose.foundation.gestures.scrollable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.*
 import androidx.compose.runtime.Composable
@@ -10,7 +15,6 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment.Companion.Center
 import androidx.compose.ui.Alignment.Companion.CenterHorizontally
-import androidx.compose.ui.Alignment.Companion.CenterStart
 import androidx.compose.ui.Alignment.Companion.CenterVertically
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -34,9 +38,9 @@ import com.github.astat1cc.vinylore.core.models.ui.UiState
 import com.github.astat1cc.vinylore.core.theme.brown
 import com.github.astat1cc.vinylore.core.theme.vintagePaper
 import com.github.astat1cc.vinylore.navigation.NavigationTree
-import com.github.astat1cc.vinylore.player.ui.tonearm.TonearmAnimated
-import com.github.astat1cc.vinylore.player.ui.vinyl.AudioControl
-import com.github.astat1cc.vinylore.player.ui.vinyl.VinylAnimated
+import com.github.astat1cc.vinylore.player.ui.views.TrackInfoAndControlView
+import com.github.astat1cc.vinylore.player.ui.views.VinylPlayerView
+import com.github.astat1cc.vinylore.player.ui.views.vinyl.AudioControl
 import org.koin.androidx.compose.getViewModel
 
 // todo handle sorting track list
@@ -62,10 +66,6 @@ fun PlayerScreen(
     val trackProgress = viewModel.currentTrackProgress.collectAsState()
     val tonearmLifted = viewModel.tonearmLifted.collectAsState()
 
-    val configuration = LocalConfiguration.current
-    val vinylSize =
-        (configuration.screenWidthDp.dp - 32.dp) * 0.7f  // 32 dp is padding 16 + 16 left and right
-
     val localState = uiState.value
     // open album choosing screen if currently no album is chosen (happens only once, then user should
     // click album choosing button manually
@@ -75,6 +75,13 @@ fun PlayerScreen(
     ) {
         viewModel.albumChoosingCalled()
         navController.navigate(NavigationTree.AlbumList.name)
+    }
+    val configuration = LocalConfiguration.current
+    val orientationPortrait = configuration.orientation == Configuration.ORIENTATION_PORTRAIT
+    val vinylSize = if (orientationPortrait) {
+        (configuration.screenWidthDp.dp - 32.dp) * 0.7f  // 32 dp is padding 16 + 16 left and right
+    } else {
+        (configuration.screenHeightDp.dp - 32.dp) * 0.7f
     }
 
     // sending information every time screen is visible or not to decide to show animation or not
@@ -174,90 +181,106 @@ fun PlayerScreen(
                     .padding(12.dp)
             )
         }
-        Box(
-            modifier = Modifier
-                .align(CenterHorizontally)
-                .padding(top = 16.dp)
-        ) {
-            VinylAnimated(
+        if (orientationPortrait) {
+            Column(
                 modifier = Modifier
-                    .padding(start = 16.dp)
-                    .width(vinylSize)
-                    .align(CenterStart),
-                discState = discAnimationState.value,
-                playerStateTransitionFrom = { oldState ->
-                    viewModel.resumePlayerAnimationStateFrom(oldState)
-                },
-                currentRotation = discRotation.value,
-                changeRotation = { newRotation ->
-                    viewModel.changeDiscRotationFromAnimation(newRotation)
-                },
-                albumCover = currentPlayingTrack.value?.albumCover
-            )
-            TonearmAnimated(
-                modifier = Modifier
-//                    .height(size)
-                    .padding(start = vinylSize) // todo maybe row
-                    .height(vinylSize)
-                    .align(CenterStart),
-                currentRotation = tonearmRotation.value,
-                tonearmState = tonearmAnimationState.value,
-                tonearmTransition = { oldState ->
-                    viewModel.resumeTonearmAnimationStateFrom(oldState)
-                },
-                changeRotation = { newRotation ->
-                    viewModel.changeTonearmRotationFromAnimation(newRotation)
+                    .fillMaxWidth()
+                    .background(brown),
+                horizontalAlignment = CenterHorizontally
+            ) {
+                VinylPlayerView(
+//                    modifier = Modifier.weight(1f),
+                    vinylSize = vinylSize,
+                    discAnimationState = discAnimationState.value,
+                    playerStateTransition = { oldState ->
+                        viewModel.resumePlayerAnimationStateFrom(oldState)
+                    },
+                    discRotation = discRotation.value,
+                    changeVinylRotation = { newRotation ->
+                        viewModel.changeDiscRotationFromAnimation(newRotation)
+                    },
+                    playingTrack = currentPlayingTrack.value,
+                    tonearmRotation = tonearmRotation.value,
+                    tonearmAnimationState = tonearmAnimationState.value,
+                    tonearmLifted = tonearmLifted.value,
+                    tonearmTransition = { oldState ->
+                        viewModel.resumeTonearmAnimationStateFrom(oldState)
+                    },
+                    changeTonearmRotation = { newRotation ->
+                        viewModel.changeTonearmRotationFromAnimation(newRotation)
 
-                },
-                tonearmLifted = tonearmLifted.value
-            )
+                    }
+                )
+                TrackInfoAndControlView(
+                    modifier = Modifier.weight(1f),
+                    playingTrackName = currentPlayingTrack.value?.name ?: "",
+                    trackProgress = trackProgress.value,
+                    sliderDraggingFinished = { viewModel.sliderDraggingFinished() },
+                    sliderDragging = { newValue ->
+                        viewModel.sliderDragging(newValue)
+                    },
+                    tonearmRotation = tonearmRotation.value,
+                    discAnimationState = discAnimationState.value,
+                    togglePlayPause = {
+                        if (localState is UiState.Success &&
+                            localState.data.album != null
+                        ) { // todo handle ui state of error
+                            viewModel.playPauseToggle()
+                        }
+                    },
+                    skipToPrevious = { viewModel.skipToPrevious() },
+                    skipToNext = { viewModel.skipToNext() },
+                )
+            }
+        } else {
+            Row(
+                modifier = Modifier
+//                content = playerScreenItems,
+            ) {
+                VinylPlayerView(
+                    vinylSize = vinylSize,
+                    discAnimationState = discAnimationState.value,
+                    playerStateTransition = { oldState ->
+                        viewModel.resumePlayerAnimationStateFrom(oldState)
+                    },
+                    discRotation = discRotation.value,
+                    changeVinylRotation = { newRotation ->
+                        viewModel.changeDiscRotationFromAnimation(newRotation)
+                    },
+                    playingTrack = currentPlayingTrack.value,
+                    tonearmRotation = tonearmRotation.value,
+                    tonearmAnimationState = tonearmAnimationState.value,
+                    tonearmLifted = tonearmLifted.value,
+                    tonearmTransition = { oldState ->
+                        viewModel.resumeTonearmAnimationStateFrom(oldState)
+                    },
+                    changeTonearmRotation = { newRotation ->
+                        viewModel.changeTonearmRotationFromAnimation(newRotation)
+
+                    }
+                )
+                TrackInfoAndControlView(
+                    modifier = Modifier
+                        .weight(1f),
+                    playingTrackName = currentPlayingTrack.value?.name ?: "",
+                    trackProgress = trackProgress.value,
+                    sliderDraggingFinished = { viewModel.sliderDraggingFinished() },
+                    sliderDragging = { newValue ->
+                        viewModel.sliderDragging(newValue)
+                    },
+                    tonearmRotation = tonearmRotation.value,
+                    discAnimationState = discAnimationState.value,
+                    togglePlayPause = {
+                        if (localState is UiState.Success &&
+                            localState.data.album != null
+                        ) { // todo handle ui state of error
+                            viewModel.playPauseToggle()
+                        }
+                    },
+                    skipToPrevious = { viewModel.skipToPrevious() },
+                    skipToNext = { viewModel.skipToNext() },
+                )
+            }
         }
-        // track name view
-        Text(
-            text = currentPlayingTrack.value?.name ?: "",
-            fontSize = 24.sp,
-            minLines = 2,
-            maxLines = 2,
-            fontWeight = FontWeight.Bold,
-            textAlign = TextAlign.Center,
-            modifier = Modifier
-                .padding(start = 20.dp, top = 40.dp, end = 20.dp)
-                .fillMaxWidth(),
-            overflow = TextOverflow.Ellipsis,
-            color = Color.White // todo or vintage paper? and think about everywhere else as well
-        )
-        // progress slider
-        Slider(
-            modifier = Modifier.padding(horizontal = 36.dp),
-            value = trackProgress.value,
-            onValueChangeFinished = {
-                viewModel.sliderDraggingFinished()
-            },
-            onValueChange = { newValue ->
-                viewModel.sliderDragging(newValue)
-            },
-
-            //it means user have already launched player, so seeking should be available
-            enabled = tonearmRotation.value >= PlayerScreenViewModel.VINYL_TRACK_START_TONEARM_ROTATION,
-
-            valueRange = 0f..100f,
-            colors = SliderDefaults.colors(
-                thumbColor = Color.White,
-                activeTrackColor = Color.White,
-                inactiveTickColor = vintagePaper
-            )
-        )
-        AudioControl(
-            modifier = Modifier.align(CenterHorizontally),
-            discState = discAnimationState.value,
-            clickTogglePlayPause = {
-                if (localState !is UiState.Success ||
-                    localState.data.album == null
-                ) return@AudioControl // todo handle ui state of error
-                viewModel.playPauseToggle()
-            },
-            clickSkipPrevious = { viewModel.skipToPrevious() },
-            clickSkipNext = { viewModel.skipToNext() }
-        )
     }
 }

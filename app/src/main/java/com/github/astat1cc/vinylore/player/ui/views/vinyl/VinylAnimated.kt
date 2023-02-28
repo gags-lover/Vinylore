@@ -1,12 +1,9 @@
-package com.github.astat1cc.vinylore.player.ui.vinyl
+package com.github.astat1cc.vinylore.player.ui.views.vinyl
 
 import android.graphics.Bitmap
-import android.util.Log
 import androidx.compose.animation.core.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import com.github.astat1cc.vinylore.player.ui.vinyl.VinylDiscState
-import com.github.astat1cc.vinylore.player.ui.vinyl.VinylView
 
 @Composable
 fun VinylAnimated(

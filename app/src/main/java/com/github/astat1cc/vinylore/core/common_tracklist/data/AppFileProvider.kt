@@ -8,7 +8,7 @@ import androidx.documentfile.provider.DocumentFile
 import com.github.astat1cc.vinylore.R
 import com.github.astat1cc.vinylore.core.models.domain.AppAlbum
 import com.github.astat1cc.vinylore.core.models.domain.AppAudioTrack
-import com.github.astat1cc.vinylore.player.ui.util.removeUnderscoresAndPathSegment
+import com.github.astat1cc.vinylore.core.util.removeUnderscoresAndPathSegment
 
 interface AppFileProvider {
 

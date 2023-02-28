@@ -21,7 +21,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.github.astat1cc.vinylore.R
 import com.github.astat1cc.vinylore.core.models.ui.AudioTrackUi
-import com.github.astat1cc.vinylore.player.ui.util.removeUnderscoresAndPathSegment
 import java.util.concurrent.TimeUnit
 
 // todo scroll to currently playing track

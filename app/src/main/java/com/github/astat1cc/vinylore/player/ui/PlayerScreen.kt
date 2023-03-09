@@ -2,12 +2,7 @@ package com.github.astat1cc.vinylore.player.ui
 
 import android.content.res.Configuration
 import androidx.compose.foundation.*
-import androidx.compose.foundation.gestures.rememberScrollableState
-import androidx.compose.foundation.gestures.scrollable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyListScope
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.*
 import androidx.compose.runtime.Composable
@@ -35,12 +30,10 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.navigation.NavHostController
 import com.github.astat1cc.vinylore.R
 import com.github.astat1cc.vinylore.core.models.ui.UiState
-import com.github.astat1cc.vinylore.core.theme.brown
-import com.github.astat1cc.vinylore.core.theme.vintagePaper
+import com.github.astat1cc.vinylore.core.theme.*
 import com.github.astat1cc.vinylore.navigation.NavigationTree
 import com.github.astat1cc.vinylore.player.ui.views.TrackInfoAndControlView
 import com.github.astat1cc.vinylore.player.ui.views.VinylPlayerView
-import com.github.astat1cc.vinylore.player.ui.views.vinyl.AudioControl
 import org.koin.androidx.compose.getViewModel
 
 // todo handle sorting track list
@@ -49,6 +42,7 @@ import org.koin.androidx.compose.getViewModel
 // todo make tonearm move slowly to start position while going to next track
 // todo handle autofocus pause other media services
 // todo when first time chose album albumscreen shows again
+// todo handle error states
 
 @Composable
 fun PlayerScreen(
@@ -65,6 +59,17 @@ fun PlayerScreen(
     val currentPlayingTrack = viewModel.currentPlayingTrackName.collectAsState()
     val trackProgress = viewModel.currentTrackProgress.collectAsState()
     val tonearmLifted = viewModel.tonearmLifted.collectAsState()
+    val albumPreparedRecently = viewModel.albumPreparedRecently.collectAsState()
+    val shouldRefreshScreen = viewModel.shouldRefreshMusicService.collectAsState()
+
+    if (shouldRefreshScreen.value) {
+        navController.navigate(NavigationTree.Player.name) {
+            navController.popBackStack(
+                NavigationTree.Player.name,
+                inclusive = true
+            )
+        }
+    }
 
     val localState = uiState.value
     // open album choosing screen if currently no album is chosen (happens only once, then user should
@@ -100,23 +105,6 @@ fun PlayerScreen(
         }
     }
 
-    // track preparing loading view
-    if (localState is UiState.Loading) {
-        Dialog(onDismissRequest = {}) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Center) {
-                Column(horizontalAlignment = CenterHorizontally) {
-                    CircularProgressIndicator(color = vintagePaper)
-                    Text(
-                        modifier = Modifier.padding(top = 8.dp),
-                        text = stringResource(R.string.preparing_media),
-                        color = vintagePaper,
-                        fontSize = 18.sp,
-                    )
-                }
-            }
-        }
-    }
-
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -131,11 +119,16 @@ fun PlayerScreen(
                 contentDescription = null,
                 tint = MaterialTheme.colors.onPrimary,
                 modifier = Modifier
-                    .padding(start = 4.dp, top = 4.dp)
+                    .padding(4.dp)
                     .align(CenterVertically)
                     .clip(CircleShape)
                     .clickable(onClick = {
-                        navController.navigate(NavigationTree.AlbumList.name)
+                        navController.navigate(NavigationTree.AlbumList.name) {
+                            navController.popBackStack(
+                                NavigationTree.AlbumList.name,
+                                inclusive = true
+                            )
+                        }
                     })
                     .size(48.dp)
                     .padding(12.dp)
@@ -149,11 +142,7 @@ fun PlayerScreen(
                 maxLines = 1,
                 color = Color.White,
                 modifier = Modifier
-                    .padding(
-//                            top = 8.dp,
-                        horizontal = 8.dp,
-//                            bottom = 20.dp
-                    )
+                    .padding(horizontal = 8.dp)
                     .fillMaxWidth()
                     .weight(1f)
                     .align(CenterVertically),
@@ -166,7 +155,7 @@ fun PlayerScreen(
                 contentDescription = null, // todo
                 tint = MaterialTheme.colors.onPrimary,
                 modifier = Modifier
-                    .padding(end = 4.dp, top = 4.dp)
+                    .padding(4.dp)
                     .align(CenterVertically)
                     .clip(CircleShape)
                     .clickable(onClick = {
@@ -209,11 +198,20 @@ fun PlayerScreen(
                     changeTonearmRotation = { newRotation ->
                         viewModel.changeTonearmRotationFromAnimation(newRotation)
 
-                    }
+                    },
+                    shouldShowVinylAppearanceAnimation = albumPreparedRecently.value,
+                    vinylAppearanceAnimationShown = {
+                        viewModel.vinylAppearanceAnimationShown()
+                    },
+                    orientationPortrait = orientationPortrait
                 )
                 TrackInfoAndControlView(
                     modifier = Modifier.weight(1f),
-                    playingTrackName = currentPlayingTrack.value?.name ?: "",
+//                    playingTrackName = currentPlayingTrack.value?.let { track ->
+//                        track.artist + " — " + track.title
+//                    } ?: "",
+                    title = currentPlayingTrack.value?.title ?: "",
+                    artist = currentPlayingTrack.value?.artist ?: "",
                     trackProgress = trackProgress.value,
                     sliderDraggingFinished = { viewModel.sliderDraggingFinished() },
                     sliderDragging = { newValue ->
@@ -257,12 +255,17 @@ fun PlayerScreen(
                     changeTonearmRotation = { newRotation ->
                         viewModel.changeTonearmRotationFromAnimation(newRotation)
 
-                    }
+                    },
+                    shouldShowVinylAppearanceAnimation = albumPreparedRecently.value,
+                    vinylAppearanceAnimationShown = {
+                        viewModel.vinylAppearanceAnimationShown()
+                    },
+                    orientationPortrait = orientationPortrait
                 )
                 TrackInfoAndControlView(
                     modifier = Modifier
                         .weight(1f),
-                    playingTrackName = currentPlayingTrack.value?.name ?: "",
+//                    playingTrackName = currentPlayingTrack.value?.title ?: "",
                     trackProgress = trackProgress.value,
                     sliderDraggingFinished = { viewModel.sliderDraggingFinished() },
                     sliderDragging = { newValue ->
@@ -279,7 +282,34 @@ fun PlayerScreen(
                     },
                     skipToPrevious = { viewModel.skipToPrevious() },
                     skipToNext = { viewModel.skipToNext() },
+                    title = currentPlayingTrack.value?.title ?: "",
+                    artist = currentPlayingTrack.value?.artist ?: "",
                 )
+            }
+        }
+    }
+
+    // track preparing loading view
+    if (localState is UiState.Loading
+//        || currentPlayingTrack.value == null
+    ) {
+        Dialog(onDismissRequest = {}) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+//                    .background(color = dimBackground)
+                ,
+                contentAlignment = Center
+            ) {
+                Column(horizontalAlignment = CenterHorizontally) {
+                    CircularProgressIndicator(color = vintagePaper)
+                    Text(
+                        modifier = Modifier.padding(top = 8.dp),
+                        text = stringResource(R.string.preparing_media),
+                        color = vintagePaper,
+                        fontSize = 18.sp,
+                    )
+                }
             }
         }
     }

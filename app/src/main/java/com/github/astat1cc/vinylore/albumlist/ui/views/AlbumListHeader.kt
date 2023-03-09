@@ -17,6 +17,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -34,7 +35,7 @@ fun AlbumListHeader(
             contentDescription = null,
             tint = Color.White,
             modifier = Modifier
-                .padding(start = 8.dp)
+                .padding(4.dp)
                 .clip(CircleShape)
                 .size(48.dp)
                 .align(Alignment.CenterStart)
@@ -51,14 +52,15 @@ fun AlbumListHeader(
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier
                 .align(Alignment.Center)
-                .padding(horizontal = 60.dp)
+                .padding(horizontal = 60.dp),
+            fontWeight = FontWeight.Bold
         )
         Icon(
             painter = painterResource(id = R.drawable.ic_refresh),
             contentDescription = null,
             tint = Color.White,
             modifier = Modifier
-                .padding(end = 8.dp)
+                .padding(4.dp)
                 .clip(CircleShape)
                 .size(48.dp)
                 .align(Alignment.CenterEnd)

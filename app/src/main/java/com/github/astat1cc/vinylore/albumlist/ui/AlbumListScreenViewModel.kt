@@ -3,14 +3,16 @@ package com.github.astat1cc.vinylore.albumlist.ui
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.github.astat1cc.vinylore.SLIDE_IN_DURATION
 import com.github.astat1cc.vinylore.albumlist.domain.AlbumListScreenInteractor
 import com.github.astat1cc.vinylore.core.AppErrorHandler
 import com.github.astat1cc.vinylore.core.DispatchersProvider
-import com.github.astat1cc.vinylore.core.models.domain.AppAlbum
+import com.github.astat1cc.vinylore.core.models.domain.AppListingAlbum
 import com.github.astat1cc.vinylore.core.models.domain.FetchResult
-import com.github.astat1cc.vinylore.core.models.ui.AlbumUi
+import com.github.astat1cc.vinylore.core.models.ui.ListingAlbumUi
 import com.github.astat1cc.vinylore.core.models.ui.UiState
 import com.github.astat1cc.vinylore.player.ui.service.MediaPlayerServiceConnection
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
@@ -25,13 +27,20 @@ class AlbumListScreenViewModel(
 //        .map { fetchResult -> fetchResult.toUiState() }
 //        .stateIn(viewModelScope, SharingStarted.Lazily, UiState.Loading())
 
-    private val _uiState = MutableStateFlow<UiState<List<AlbumUi>?>>(UiState.Loading())
-    val uiState: StateFlow<UiState<List<AlbumUi>?>> = _uiState.asStateFlow()
+    private val _uiState = MutableStateFlow<UiState<List<ListingAlbumUi>?>>(UiState.Loading())
+    val uiState: StateFlow<UiState<List<ListingAlbumUi>?>> = _uiState.asStateFlow()
+
+    private val _clickedAlbumUri = MutableStateFlow<Uri?>(null)
+    val clickedAlbumUri: StateFlow<Uri?> = _clickedAlbumUri.asStateFlow()
 
     init {
         enableAlbumsScan()
         viewModelScope.launch {
-            interactor.fetchAlbums(refresh = true).collect { fetchResult ->
+            // default delay makes transition animation smoother, because UiState.Loading wouldn't
+            // be changed to UiState.Success with probably huge list of items
+            val defaultDelay = launch { delay(SLIDE_IN_DURATION.toLong() + 20L) }
+            interactor.fetchAlbums().collect { fetchResult ->
+                defaultDelay.join()
                 _uiState.value = fetchResult.toUiState()
             }
         }
@@ -51,9 +60,10 @@ class AlbumListScreenViewModel(
         interactor.saveChosenDirectoryPath(uri.toString())
     }
 
-    fun saveChosenPlayingAlbum(albumId: Int) = viewModelScope.launch(dispatchers.io()) {
-        interactor.saveChosenPlayingAlbum(albumId)
-//        serviceConnection.clearCurrentPlayingTrack()
+    fun onAlbumClick(albumUri: Uri) = viewModelScope.launch(dispatchers.io()) {
+        interactor.saveChosenPlayingAlbum(albumUri)
+        _clickedAlbumUri.value = albumUri
+        delay(600L) // delay of album slideOut animation
     }
 
     fun disableAlbumsScan() {
@@ -65,12 +75,12 @@ class AlbumListScreenViewModel(
         interactor.enableAlbumsScan()
     }
 
-    private fun FetchResult<List<AppAlbum>?>.toUiState(): UiState<List<AlbumUi>?> =
+    private fun FetchResult<List<AppListingAlbum>?>.toUiState(): UiState<List<ListingAlbumUi>?> =
         when (this) {
             is FetchResult.Success -> {
                 UiState.Success(
                     data?.map { albumDomain ->
-                        AlbumUi.fromDomain(albumDomain)
+                        ListingAlbumUi.fromDomain(albumDomain)
                     }
                 )
             }

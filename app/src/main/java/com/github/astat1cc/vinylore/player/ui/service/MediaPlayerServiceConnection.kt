@@ -8,9 +8,8 @@ import android.support.v4.media.session.MediaControllerCompat
 import android.support.v4.media.session.PlaybackStateCompat
 import android.util.Log
 import com.github.astat1cc.vinylore.Consts
-import com.github.astat1cc.vinylore.core.models.ui.AlbumUi
+import com.github.astat1cc.vinylore.core.models.ui.PlayingAlbumUi
 import com.github.astat1cc.vinylore.core.models.ui.AudioTrackUi
-import com.github.astat1cc.vinylore.core.models.ui.UiState
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 
@@ -32,8 +31,11 @@ class MediaPlayerServiceConnection(
     private val _currentPlayingTrack = MutableStateFlow<AudioTrackUi?>(null)
     val currentPlayingTrack = _currentPlayingTrack.asStateFlow()
 
-    private val _playingAlbum = MutableStateFlow<AlbumUi?>(null)
-    val playingAlbum: StateFlow<AlbumUi?> = _playingAlbum.asStateFlow()
+    private val _playingAlbum = MutableStateFlow<PlayingAlbumUi?>(null)
+    val playingAlbum: StateFlow<PlayingAlbumUi?> = _playingAlbum.asStateFlow()
+
+    private val _albumPreparedRecently = MutableStateFlow<Boolean?>(null)
+    val albumPreparedRecently: StateFlow<Boolean?> = _albumPreparedRecently.asStateFlow()
 
     private val connectionScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
 
@@ -93,7 +95,7 @@ class MediaPlayerServiceConnection(
         mediaBrowser.sendCustomAction(Consts.UNMUTE, null, null)
     }
 
-    fun prepareMedia(album: AlbumUi) {
+    fun prepareMedia(album: PlayingAlbumUi) {
         emitPlayerState(CustomPlayerState.IDLE)
         _playingAlbum.value = album
         mediaBrowser.sendCustomAction(
@@ -106,6 +108,7 @@ class MediaPlayerServiceConnection(
             trackToPlay.uri.toString(),
             null
         )
+        _albumPreparedRecently.value = true
     }
 
     private fun emitPlayerState(newState: CustomPlayerState) {
@@ -169,9 +172,8 @@ class MediaPlayerServiceConnection(
         mediaBrowser.sendCustomAction(Consts.REFRESH_MEDIA_PLAY_ACTION, null, null)
     }
 
-    fun clearCurrentPlayingTrack() {
-        _currentPlayingTrack.value = null
-        mediaController
+    fun albumPreparedLongAgo() {
+        _albumPreparedRecently.value = false
     }
 
     private inner class MediaBrowserConnectionCallback(

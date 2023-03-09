@@ -4,7 +4,8 @@ import android.graphics.Bitmap
 
 data class AppAudioTrack(
     val filePath: String,
-    val name: String,// todo if i need nullable?
+    val title: String,
     val duration: Long,
-    val albumCover: Bitmap?
+    val albumCover: Bitmap?,
+    val artist: String?,
 )

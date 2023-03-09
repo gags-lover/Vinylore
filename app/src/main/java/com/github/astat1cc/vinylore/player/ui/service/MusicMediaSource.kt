@@ -4,7 +4,6 @@ import android.support.v4.media.MediaBrowserCompat
 import android.support.v4.media.MediaBrowserCompat.MediaItem.FLAG_PLAYABLE
 import android.support.v4.media.MediaDescriptionCompat
 import android.support.v4.media.MediaMetadataCompat
-import android.util.Log
 import com.github.astat1cc.vinylore.R
 import com.github.astat1cc.vinylore.core.models.domain.FetchResult
 import com.github.astat1cc.vinylore.core.models.ui.AudioTrackUi
@@ -56,17 +55,16 @@ class MusicMediaSource(
             interactor.getAlbumFlow().collect { fetchResult ->
                 state = AudioSourceState.INITIALIZING
                 if (fetchResult !is FetchResult.Success || fetchResult.data == null) return@collect
-                val trackListUi =
-                    fetchResult.data.trackList.map { trackDomain ->
-                        AudioTrackUi.fromDomain(
-                            trackDomain
-                        )
-                    }
+                val trackListUi = fetchResult.data.trackList.map { trackDomain ->
+                    AudioTrackUi.fromDomain(
+                        trackDomain
+                    )
+                }
                 audioMediaMetadata = trackListUi.map { track ->
                     MediaMetadataCompat.Builder()
                         .putString(MediaMetadataCompat.METADATA_KEY_MEDIA_ID, track.uri.toString())
                         .putString(MediaMetadataCompat.METADATA_KEY_MEDIA_URI, track.uri.toString())
-                        .putString(MediaMetadataCompat.METADATA_KEY_TITLE, track.name)
+                        .putString(MediaMetadataCompat.METADATA_KEY_TITLE, track.title)
                         .putBitmap(MediaMetadataCompat.METADATA_KEY_DISPLAY_ICON, track.albumCover)
                         .build()
                 }

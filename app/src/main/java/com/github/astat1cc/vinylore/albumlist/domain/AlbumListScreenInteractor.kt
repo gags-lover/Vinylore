@@ -1,9 +1,10 @@
 package com.github.astat1cc.vinylore.albumlist.domain
 
+import android.net.Uri
 import com.github.astat1cc.vinylore.core.AppErrorHandler
 import com.github.astat1cc.vinylore.core.DispatchersProvider
 import com.github.astat1cc.vinylore.core.common_tracklist.domain.CommonRepository
-import com.github.astat1cc.vinylore.core.models.domain.AppAlbum
+import com.github.astat1cc.vinylore.core.models.domain.AppListingAlbum
 import com.github.astat1cc.vinylore.core.models.domain.FetchResult
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
@@ -14,9 +15,9 @@ interface AlbumListScreenInteractor {
 
     suspend fun saveChosenDirectoryPath(dirPath: String)
 
-    suspend fun saveChosenPlayingAlbum(albumId: Int)
+    suspend fun saveChosenPlayingAlbum(albumUri: Uri)
 
-    fun fetchAlbums(refresh: Boolean): Flow<FetchResult<List<AppAlbum>?>>
+    fun fetchAlbums(): Flow<FetchResult<List<AppListingAlbum>?>>
 
     fun disableAlbumsScan()
 
@@ -37,9 +38,9 @@ interface AlbumListScreenInteractor {
             }
         }
 
-        override suspend fun saveChosenPlayingAlbum(albumId: Int) {
+        override suspend fun saveChosenPlayingAlbum(albumUri: Uri) {
             withContext(dispatchers.io()) {
-                albumListScreenRepository.saveChosenPlayingAlbumId(albumId)
+                albumListScreenRepository.saveChosenPlayingAlbumPath(albumUri)
             }
         }
 
@@ -50,15 +51,15 @@ interface AlbumListScreenInteractor {
 //                FetchResult.Fail(error = errorHandler.getErrorTypeOf(e))
 //            }
 
-        override fun fetchAlbums(refresh: Boolean): Flow<FetchResult<List<AppAlbum>?>> = flow {
+        override fun fetchAlbums(): Flow<FetchResult<List<AppListingAlbum>?>> = flow {
             while (true) {
                 if (needToCheckAlbumList) {
                     try {
                         emit(
-                            FetchResult.Success(data = commonRepository.fetchAlbums(refresh))
+                            FetchResult.Success(data = commonRepository.fetchAlbumsForListing())
                         )
                     } catch (e: Exception) {
-                        throw e // todo
+//                        throw e // todo
                         emit(
                             FetchResult.Fail(error = errorHandler.getErrorTypeOf(e))
                         )

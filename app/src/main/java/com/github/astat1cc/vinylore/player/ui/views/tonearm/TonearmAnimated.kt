@@ -70,11 +70,12 @@ fun TonearmAnimated(
     }
     Box(modifier = modifier) {
         // additional shadow
-        AnimatedVisibility(
-            visible = tonearmLifted,
-            enter = fadeIn(),
-            exit = fadeOut()
-        ) {
+//        AnimatedVisibility(
+//            visible = tonearmLifted,
+//            enter = fadeIn(),
+//            exit = fadeOut()
+//        ) {
+        if (tonearmLifted) {
             Image(
                 modifier = Modifier
                     .fillMaxHeight()

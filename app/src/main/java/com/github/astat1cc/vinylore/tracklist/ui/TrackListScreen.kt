@@ -1,5 +1,6 @@
 package com.github.astat1cc.vinylore.tracklist.ui
 
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -29,6 +30,8 @@ import com.github.astat1cc.vinylore.core.theme.brown
 import com.github.astat1cc.vinylore.core.theme.vintagePaper
 import com.github.astat1cc.vinylore.tracklist.ui.views.TrackView
 import org.koin.androidx.compose.getViewModel
+
+//todo handle if empty list maybe
 
 @Composable
 fun TrackListScreen(
@@ -74,29 +77,38 @@ fun TrackListScreen(
                 overflow = TextOverflow.Ellipsis,
             )
         }
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-            when (localState) {
-                is UiState.Success -> {
+        when (localState) {
+            is UiState.Success -> {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.TopCenter
+                ) {
                     LazyColumn(contentPadding = PaddingValues(vertical = 20.dp)) {
-                        val trackList = localState.data.album!!.trackList
-                        items(trackList) { track ->
+                        val album = localState.data.album!!
+                        items(album.trackList) { track ->
                             TrackView(
                                 track = track,
                                 isCurrentlyPlaying = track == localState.data.currentPlayingTrack,
+                                useTitleWithoutArtist = album.albumOfOneArtist,
                                 onTrackViewClicked = {
-                                    viewModel.skipToQueueItem(trackList.indexOf(track).toLong(), track)
+                                    viewModel.skipToQueueItem(
+                                        album.trackList.indexOf(track).toLong(),
+                                        track
+                                    )
                                 }
                             )
                         }
                     }
                 }
-                is UiState.Fail -> {
+            }
+            is UiState.Fail -> {
 
-                }
-                is UiState.Loading -> {
+            }
+            is UiState.Loading -> {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
                     CircularProgressIndicator(color = brown)
                 }
             }

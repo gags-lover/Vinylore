@@ -29,7 +29,8 @@ import java.util.concurrent.TimeUnit
 fun TrackView(
     track: AudioTrackUi,
     isCurrentlyPlaying: Boolean,
-    onTrackViewClicked: () -> Unit
+    onTrackViewClicked: () -> Unit,
+    useTitleWithoutArtist: Boolean
 ) {
     MaterialTheme {
         Row(
@@ -50,7 +51,11 @@ fun TrackView(
                     .weight(1f)
                     .padding(start = 12.dp, end = 8.dp),
                 textAlign = TextAlign.Center,
-                text = track.name?.uppercase() ?: stringResource(id = R.string.unknown_name),
+                text = if (useTitleWithoutArtist || track.artist == null) {
+                    track.title.uppercase()
+                } else {
+                    "${track.artist} - ${track.title}".uppercase()
+                },
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
                 fontWeight = FontWeight.Bold,

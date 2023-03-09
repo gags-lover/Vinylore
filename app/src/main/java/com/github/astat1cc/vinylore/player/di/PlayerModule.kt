@@ -60,7 +60,7 @@ val playerModule = module {
     }
     single<MusicPlayerInteractor> {
         MusicPlayerInteractor.Impl(
-            playerRepository = get(),
+//            playerRepository = get(),
             commonRepository = get(),
             dispatchers = get(),
             errorHandler = get()

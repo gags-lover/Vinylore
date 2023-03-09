@@ -1,11 +1,13 @@
 package com.github.astat1cc.vinylore.core.common_tracklist.data
 
 import android.content.SharedPreferences
+import android.util.Log
 import androidx.core.net.toUri
 import com.github.astat1cc.vinylore.core.AppConst
 import com.github.astat1cc.vinylore.core.DispatchersProvider
 import com.github.astat1cc.vinylore.core.common_tracklist.domain.CommonRepository
-import com.github.astat1cc.vinylore.core.models.domain.AppAlbum
+import com.github.astat1cc.vinylore.core.models.domain.AppListingAlbum
+import com.github.astat1cc.vinylore.core.models.domain.AppPlayingAlbum
 import kotlinx.coroutines.withContext
 
 class CommonRepositoryImpl(
@@ -14,22 +16,39 @@ class CommonRepositoryImpl(
     private val dispatchers: DispatchersProvider
 ) : CommonRepository {
 
-    private var albumsSnapshot: List<AppAlbum>? = null
+    private var albumListSnapshot: List<AppListingAlbum>? = null
 
-    override suspend fun fetchAlbums(refresh: Boolean): List<AppAlbum>? =
+    private var playingAlbumSnapshot: AppPlayingAlbum? = null
+
+    override suspend fun fetchAlbumsForListing(): List<AppListingAlbum>? =
+        // todo do i need refresh var now?
         withContext(dispatchers.io()) {
-            if (albumsSnapshot == null || refresh) {
-                initializeAlbums()
-                albumsSnapshot
+            initializeAlbums()
+            albumListSnapshot // todo just return list with no var
+        }
+
+    override suspend fun fetchPlayingAlbum(refresh: Boolean): AppPlayingAlbum? =
+        withContext(dispatchers.io()) {
+            if (playingAlbumSnapshot == null || refresh) {
+                Log.e("fetching", "fetchPlayingAlbum with init in common repository")
+                initializePlayingAlbum()
+                playingAlbumSnapshot
             } else {
-                albumsSnapshot
+                playingAlbumSnapshot
             }
         }
 
     private suspend fun initializeAlbums() {
-        val dirPath = sharedPrefs.getString(AppConst.CHOSEN_DIRECTORY_PATH_KEY, null)
-        albumsSnapshot = dirPath?.let {
-            fileProvider.getAlbumListFrom(dirPath.toUri())
+        val dirPath = sharedPrefs.getString(AppConst.CHOSEN_ROOT_DIRECTORY_PATH_KEY, null)
+        albumListSnapshot = dirPath?.let {
+            fileProvider.getOnlyAlbumListFrom(dirPath.toUri())
+        }
+    }
+
+    private suspend fun initializePlayingAlbum() {
+        val albumPath = sharedPrefs.getString(AppConst.PLAYING_ALBUM_PATH_KEY, null)
+        playingAlbumSnapshot = albumPath?.let {
+            fileProvider.getAlbumFrom(albumPath.toUri())
         }
     }
 }

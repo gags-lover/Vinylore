@@ -7,9 +7,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.github.astat1cc.vinylore.Consts
 import com.github.astat1cc.vinylore.core.AppErrorHandler
-import com.github.astat1cc.vinylore.core.models.domain.AppAlbum
+import com.github.astat1cc.vinylore.core.models.domain.AppPlayingAlbum
 import com.github.astat1cc.vinylore.core.models.domain.FetchResult
-import com.github.astat1cc.vinylore.core.models.ui.AlbumUi
+import com.github.astat1cc.vinylore.core.models.ui.PlayingAlbumUi
 import com.github.astat1cc.vinylore.core.models.ui.AudioTrackUi
 import com.github.astat1cc.vinylore.player.domain.MusicPlayerInteractor
 import com.github.astat1cc.vinylore.player.ui.models.PlayerScreenUiStateData
@@ -34,11 +34,10 @@ class PlayerScreenViewModel(
 
     val uiState: StateFlow<UiState<PlayerScreenUiStateData>> =
         interactor.getAlbumFlow()
-            .map { fetchResult -> fetchResult.toUiState() }
+            .map { fetchResult ->
+                fetchResult?.toUiState() ?: UiState.Loading()
+            }
             .stateIn(viewModelScope, SharingStarted.Lazily, UiState.Loading())
-
-//    private val _uiState = MutableStateFlow<UiState<PlayerScreenUiStateData>>(UiState.Loading())
-//    val uiState: StateFlow<UiState<PlayerScreenUiStateData>> = _uiState.asStateFlow()
 
     private val _albumChoosingCalled = MutableStateFlow<Boolean>(false)
     val albumChoosingCalled: StateFlow<Boolean> = _albumChoosingCalled.asStateFlow()
@@ -49,8 +48,7 @@ class PlayerScreenViewModel(
     private val _playerAnimationState = MutableStateFlow(VinylDiscState.STOPPED)
     val playerAnimationState = _playerAnimationState.asStateFlow()
 
-    private val _tonearmAnimationState =
-        MutableStateFlow<TonearmState>(TonearmState.ON_START_POSITION)
+    private val _tonearmAnimationState = MutableStateFlow(TonearmState.ON_START_POSITION)
     val tonearmAnimationState: StateFlow<TonearmState> = _tonearmAnimationState.asStateFlow()
 
     private val _discRotation = MutableStateFlow<Float>(0f)
@@ -59,8 +57,11 @@ class PlayerScreenViewModel(
     private val _tonearmRotation = MutableStateFlow<Float>(0f)
     val tonearmRotation: StateFlow<Float> = _tonearmRotation.asStateFlow()
 
-    // added to escape situations when asynchronous animatable changing rotation even after stop
-    // (situation when navigating to another album)
+    private val _shouldRefreshMusicService = MutableStateFlow(false)
+    val shouldRefreshMusicService: StateFlow<Boolean> = _shouldRefreshMusicService.asStateFlow()
+
+// added to escape situations when asynchronous animatable changing rotation even after stop
+// (situation when navigating to another album)
 //    var isRotationChangingAble = true
 //    var isRotationChangingAble = false
 
@@ -68,12 +69,18 @@ class PlayerScreenViewModel(
         MutableStateFlow(0L)
     val currentPlaybackPosition = _currentPlaybackPosition.asStateFlow()
 
+//    private val albumChosenRecently = serviceConnection.albumChosenRecently
+
     val currentPlayingTrackName: StateFlow<AudioTrackUi?> =
         serviceConnection.currentPlayingTrack.map { track ->
-            // for some reason onMetadataChanged is called before it is actually changed, and
-            // wrong track is emitting for the first moments, so delay let us escape it
-//            delay(750L)
-            track
+            // this checking helps skip moments when user have chosen new album, it navigates to
+            // PlayerScreen, but there's previous playing track emitted, and album cover on the
+            // vinyl and track name change in user's eys, which is not appropriate.
+            if (uiState.value is UiState.Loading) {
+                null
+            } else {
+                track
+            }
         }.stateIn(viewModelScope, SharingStarted.Lazily, null)
 
     private val isConnected: StateFlow<Boolean> =
@@ -91,7 +98,16 @@ class PlayerScreenViewModel(
 
     private val shouldShowSmoothStartAndStopVinylAnimation = MutableStateFlow(false)
 
-    val currentSongDuration = MusicService.curSongDuration
+    private val currentSongDuration = MusicService.curSongDuration
+//        .map { duration ->
+//        Log.e("dur", duration.toString())
+//        if (duration < 120000) { // if less than 2 minutes
+//            120000
+//        } else {
+//            duration
+//        }
+//    }.stateIn(viewModelScope, SharingStarted.Lazily, 0L)
+
     private val _currentTrackProgress = MutableStateFlow<Float>(0f)
     val currentTrackProgress: StateFlow<Float> = _currentTrackProgress.asStateFlow()
 
@@ -112,6 +128,8 @@ class PlayerScreenViewModel(
     private var _tonearmLifted = MutableStateFlow(false)
     val tonearmLifted: StateFlow<Boolean> = _tonearmLifted.asStateFlow()
 
+    val albumPreparedRecently: StateFlow<Boolean?> = serviceConnection.albumPreparedRecently
+
     init {
         updatePlayback()
         with(viewModelScope) {
@@ -122,7 +140,6 @@ class PlayerScreenViewModel(
                 initialDelayForPlayButtonBlockingPassed = true
             }
             launch {
-                Log.e("prepare", "initializeAlbum")
                 interactor.initializeAlbum()
                 startProgressConnection()
             }
@@ -177,6 +194,7 @@ class PlayerScreenViewModel(
                         _currentPlaybackPosition.value = position
                     }
                     serviceConnection.subscribe(rootMediaId, subscriptionCallback)
+                    Log.e("connection", "collected from isConnected")
                 }
             }
         }
@@ -188,6 +206,7 @@ class PlayerScreenViewModel(
                     if (state.data.album != null &&
                         isConnected.value
                     ) {
+                        Log.e("connection", "preparation called from collecting uiState")
                         serviceConnection.prepareMedia(state.data.album)
                         preparationCalled = true
                     }
@@ -215,7 +234,7 @@ class PlayerScreenViewModel(
     }
 
     private fun getRotationFrom(percentageProgress: Float) =
-    // divided by 5.26 to make 100% progress equal to 19 points of rotation, so
+// divided by 5.26 to make 100% progress equal to 19 points of rotation, so
         // start rotation amount + this would give end rotation amount
         VINYL_TRACK_START_TONEARM_ROTATION + percentageProgress / 5.26f
 
@@ -235,9 +254,9 @@ class PlayerScreenViewModel(
 //            isRotationChangingAble = true
             serviceConnection.launchPlaying()
         } else {
-            if (isMusicPlaying.value) {
+            if (playerAnimationState.value == VinylDiscState.STARTED) {
                 serviceConnection.slowPause()
-            } else {
+            } else if (playerAnimationState.value == VinylDiscState.STOPPED) {
                 serviceConnection.slowResume()
             }
         }
@@ -276,11 +295,12 @@ class PlayerScreenViewModel(
         }
     }
 
-    private fun FetchResult<AppAlbum?>.toUiState(): UiState<PlayerScreenUiStateData> =
+    private fun FetchResult<AppPlayingAlbum?>.toUiState(): UiState<PlayerScreenUiStateData> =
         when (this) {
             is FetchResult.Success -> {
-                val album = if (data == null) null else AlbumUi.fromDomain(data)
+                val album = if (data == null) null else PlayingAlbumUi.fromDomain(data)
                 val discChosen = album != null
+                Log.e("album", album?.trackList?.first().toString())
                 UiState.Success(
                     PlayerScreenUiStateData(
                         album = album,
@@ -390,12 +410,21 @@ class PlayerScreenViewModel(
         }
     }
 
+    private var refreshCalled = false
     fun composableIsVisible() {
         shouldShowSmoothStartAndStopVinylAnimation.value = true
+        if (uiState.value !is UiState.Success && !refreshCalled && appWasHidden) {
+            refreshCalled = true
+            _shouldRefreshMusicService.value = true
+            Log.e("refresh", "Refresh called")
+        }
+        appWasHidden = false
     }
 
+    private var appWasHidden = false
     fun composableIsInvisible() {
         shouldShowSmoothStartAndStopVinylAnimation.value = false
+        appWasHidden = true
     }
 
     fun changeDiscRotationFromAnimation(newRotation: Float) {
@@ -411,6 +440,10 @@ class PlayerScreenViewModel(
 
     fun changeTonearmRotationFromAnimation(newRotation: Float) {
         _tonearmRotation.value = newRotation
+    }
+
+    fun vinylAppearanceAnimationShown() {
+        serviceConnection.albumPreparedLongAgo()
     }
 
     companion object {

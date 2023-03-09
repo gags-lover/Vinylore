@@ -204,17 +204,20 @@ class MusicService : MediaBrowserServiceCompat() {
         crackleExoPlayer.playWhenReady = true
     }
 
+    private var shouldSlowlyPause = false
     private fun slowlyPause() {
+        shouldSlowlyResume = false
+        shouldSlowlyPause = true
         serviceScope.launch {
             var currentSpeed = 1f
-            while (currentSpeed > 0.11) {
-                currentSpeed -= 0.1f
+            while (currentSpeed > 0.11 && shouldSlowlyPause) {
+                currentSpeed -= 0.09f
                 trackExoPlayer.playbackParameters =
                     PlaybackParameters(
                         currentSpeed,
-                        0.8f + currentSpeed / 10
+                        0.7f + currentSpeed / 3.3f
                     )
-                trackExoPlayer.volume = currentSpeed * 1.2f
+                trackExoPlayer.volume = currentSpeed
                 crackleExoPlayer.volume = currentSpeed
                 delay(100L)
             }
@@ -228,20 +231,26 @@ class MusicService : MediaBrowserServiceCompat() {
         }
     }
 
+    private var shouldSlowlyResume = false
     private fun slowlyResume() {
+        shouldSlowlyResume = true
+        shouldSlowlyPause = false
         serviceScope.launch {
-            crackleExoPlayer.playWhenReady = true
-            trackExoPlayer.playWhenReady = true
+            launch {
+                delay(50L)
+                crackleExoPlayer.playWhenReady = true
+                trackExoPlayer.playWhenReady = true
+            }
             var currentSpeed = 0.1f
-            while (currentSpeed < 1) {
-                currentSpeed += 0.1f
+            while (currentSpeed < 1 && shouldSlowlyResume) {
+                currentSpeed += 0.09f
                 trackExoPlayer.playbackParameters =
                     PlaybackParameters(
                         currentSpeed,
-                        0.8f + currentSpeed / 10
+                        0.7f + currentSpeed / 3.3f
                     )
-                trackExoPlayer.volume = currentSpeed * 2f
-                crackleExoPlayer.volume = currentSpeed * 2f
+                trackExoPlayer.volume = currentSpeed
+                crackleExoPlayer.volume = currentSpeed
                 delay(100L)
             }
             trackExoPlayer.playbackParameters = PlaybackParameters(1f, 1f)

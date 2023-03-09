@@ -7,7 +7,8 @@ import com.github.astat1cc.vinylore.core.models.domain.AppAudioTrack
 
 data class AudioTrackUi(
     val uri: Uri,
-    val name: String?,
+    val title: String,
+    val artist: String?,
     val duration: Long,
     val albumCover: Bitmap?
 ) {
@@ -15,7 +16,7 @@ data class AudioTrackUi(
     companion object {
 
         fun fromDomain(track: AppAudioTrack) = with(track) {
-            AudioTrackUi(filePath.toUri(), name, duration, albumCover)
+            AudioTrackUi(filePath.toUri(), title, artist, duration, albumCover)
         }
     }
 }

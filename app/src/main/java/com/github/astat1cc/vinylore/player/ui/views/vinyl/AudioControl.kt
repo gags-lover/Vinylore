@@ -17,6 +17,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.github.astat1cc.vinylore.R
 import com.github.astat1cc.vinylore.core.theme.brown
+import com.github.astat1cc.vinylore.core.theme.darkBackground
 
 @Composable
 fun AudioControl(
@@ -27,17 +28,20 @@ fun AudioControl(
     clickSkipNext: () -> Unit,
     clickSkipPrevious: () -> Unit,
 ) {
-    val buttonStandardSize = 56.dp
-    val buttonStandardModifier = Modifier
-        .padding(vertical = 32.dp, horizontal = 8.dp)
-        .size(buttonStandardSize)
+    val secondaryButtonStandardSize = 56.dp
+    val secondaryButtonStandardModifier = Modifier
+        .padding(horizontal = 8.dp)
+        .size(secondaryButtonStandardSize)
         .clip(CircleShape)
-    Row(modifier = modifier, verticalAlignment = Alignment.CenterVertically) {
+    Row(
+        modifier = modifier.padding(bottom = 16.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
         Icon(
             painter = painterResource(id = R.drawable.ic_skip_previous),
             contentDescription = null, // todo content description
             tint = Color.White,
-            modifier = buttonStandardModifier
+            modifier = secondaryButtonStandardModifier
                 .clickable(onClick = { clickSkipPrevious() })
                 .padding(8.dp)
         )
@@ -49,9 +53,9 @@ fun AudioControl(
                 }
             ),
             contentDescription = null, // todo content description
-            tint = brown,
+            tint = darkBackground,
             modifier = Modifier
-                .padding(vertical = 36.dp, horizontal = 8.dp)
+                .padding(8.dp)
                 .size(64.dp)
                 .clip(CircleShape)
                 .background(Color.White)
@@ -62,7 +66,7 @@ fun AudioControl(
             painter = painterResource(id = R.drawable.ic_skip_next),
             contentDescription = null, // todo content description
             tint = Color.White,
-            modifier = buttonStandardModifier
+            modifier = secondaryButtonStandardModifier
                 .clickable(onClick = { clickSkipNext() })
                 .padding(8.dp)
         )

@@ -27,6 +27,7 @@ import androidx.navigation.NavHostController
 import com.github.astat1cc.vinylore.R
 import com.github.astat1cc.vinylore.core.models.ui.UiState
 import com.github.astat1cc.vinylore.core.theme.brown
+import com.github.astat1cc.vinylore.core.theme.darkBackground
 import com.github.astat1cc.vinylore.core.theme.vintagePaper
 import com.github.astat1cc.vinylore.tracklist.ui.views.TrackView
 import org.koin.androidx.compose.getViewModel
@@ -47,9 +48,9 @@ fun TrackListScreen(
             Icon(
                 painter = painterResource(R.drawable.ic_arrow_back),
                 contentDescription = null,
-                tint = brown,
+                tint = darkBackground,
                 modifier = Modifier
-                    .padding(start = 4.dp, top = 4.dp)
+                    .padding(4.dp)
                     .align(Alignment.CenterStart)
                     .clip(CircleShape)
                     .clickable(onClick = {
@@ -66,11 +67,7 @@ fun TrackListScreen(
                 maxLines = 1,
                 color = Color.Black,
                 modifier = Modifier
-                    .padding(
-//                            top = 8.dp,
-                        horizontal = 8.dp,
-//                            bottom = 20.dp
-                    )
+                    .padding(horizontal = 8.dp)
                     .fillMaxWidth()
                     .align(Alignment.Center),
                 textAlign = TextAlign.Center,
@@ -109,7 +106,7 @@ fun TrackListScreen(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) {
-                    CircularProgressIndicator(color = brown)
+                    CircularProgressIndicator(color = darkBackground)
                 }
             }
         }

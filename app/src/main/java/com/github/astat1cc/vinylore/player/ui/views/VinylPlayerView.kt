@@ -5,18 +5,25 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.github.astat1cc.vinylore.R
 import com.github.astat1cc.vinylore.core.models.ui.AudioTrackUi
+import com.github.astat1cc.vinylore.core.theme.brownForGradient
 import com.github.astat1cc.vinylore.core.theme.newBrown
+import com.github.astat1cc.vinylore.core.theme.steelGray
 import com.github.astat1cc.vinylore.player.ui.views.tonearm.TonearmAnimated
 import com.github.astat1cc.vinylore.player.ui.views.tonearm.TonearmState
 import com.github.astat1cc.vinylore.player.ui.views.vinyl.VinylAnimated
@@ -58,13 +65,43 @@ fun VinylPlayerView(
 
     val modifierConsideringOrientation =
         if (orientationPortrait) modifier.fillMaxWidth() else modifier
+//    Box(){
+//        // this it to hide black background in the bottom when corners are rounded
+//        Box(
+//            modifier = Modifier
+//                .align(Alignment.BottomStart)
+//                .fillMaxWidth()
+//                .height(8.dp)
+//                .background(brownForGradient)
+//        )
     Box(
         modifier = modifierConsideringOrientation
             .shadow(elevation = 8.dp, clip = true)
-            .background(newBrown),
+            .clip(RoundedCornerShape(8.dp))
+//            .background(brownForGradient)
+        ,
         contentAlignment = Alignment.Center
     ) {
+        Image(
+            modifier = Modifier
+                .matchParentSize(),
+            painter = painterResource(id = R.drawable.wood_background),
+            contentDescription = null,
+            contentScale = ContentScale.FillBounds
+        )
+
         Box(modifier = Modifier.padding(vertical = 32.dp)) {
+            // Vinyl platter
+            Box(
+                modifier = Modifier
+                    .padding(start = 16.dp)
+                    .size(vinylSize)
+                    .padding(vinylSize * 0.05f)
+                    .clip(CircleShape)
+                    .border(width = 4.dp, color = steelGray, shape = CircleShape)
+                    .background(Color.Black)
+                    .align(Alignment.CenterStart),
+            )
             AnimatedVisibility(
                 visible = playingTrack != null && vinylIsVisible,
                 enter = slideInHorizontally(initialOffsetX = { it })
@@ -93,12 +130,12 @@ fun VinylPlayerView(
                 tonearmLifted = tonearmLifted
             )
         }
-        Image(
-            modifier = Modifier.matchParentSize(),
-            painter = painterResource(id = R.drawable.glass),
-            contentDescription = null,
-            contentScale = ContentScale.FillBounds,
-//            alpha = 0.9f
-        )
+//            Image(
+//                modifier = Modifier.matchParentSize(),
+//                painter = painterResource(id = R.drawable.glass),
+//                contentDescription = null,
+//                contentScale = ContentScale.FillBounds,
+//                alpha = 0.4f
+//            )
     }
 }

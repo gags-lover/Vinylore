@@ -11,6 +11,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
@@ -19,9 +20,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.github.astat1cc.vinylore.core.theme.dimBackground
-import com.github.astat1cc.vinylore.core.theme.steelGray
-import com.github.astat1cc.vinylore.core.theme.vintagePaper
+import com.github.astat1cc.vinylore.core.theme.*
 import com.github.astat1cc.vinylore.player.ui.PlayerScreenViewModel
 import com.github.astat1cc.vinylore.player.ui.views.vinyl.AudioControl
 import com.github.astat1cc.vinylore.player.ui.views.vinyl.VinylDiscState
@@ -43,21 +42,28 @@ fun TrackInfoAndControlView(
 ) {
     Column(
         modifier = modifier
-//            .clip(RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp))
-//            .background(dimBackground)
-        ,
+            .background(
+                brush = Brush.verticalGradient(
+                    colors = listOf(
+                        brownForGradient,
+                        darkBackground,
+//                        brownForGradient,
+//                        darkBackground
+                    ),
+                )
+            ),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
         Column(
-            Modifier
-                .height(112.dp),
+            modifier = Modifier.padding(vertical = 8.dp),
+//            Modifier.height(112.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
             Text(
                 text = title,
-                fontSize = 26.sp,
+                fontSize = 24.sp,
                 maxLines = 1,
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center,
@@ -69,7 +75,7 @@ fun TrackInfoAndControlView(
             )
             Text(
                 text = artist,
-                fontSize = 20.sp,
+                fontSize = 18.sp,
                 maxLines = 1,
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center,
@@ -80,19 +86,6 @@ fun TrackInfoAndControlView(
                 color = vintagePaper, // todo or vintage paper? and think about everywhere else as well
             )
         }
-//        Text(
-//            text = playingTrackName,
-//            fontSize = 24.sp,
-////            minLines = 2,
-//            maxLines = 2,
-//            fontWeight = FontWeight.Bold,
-//            textAlign = TextAlign.Center,
-//            modifier = Modifier
-//                .padding(start = 20.dp, top = 40.dp, end = 20.dp)
-//                .fillMaxWidth(),
-//            overflow = TextOverflow.Ellipsis,
-//            color = Color.White // todo or vintage paper? and think about everywhere else as well
-//        )
         // progress slider
         Slider(
             modifier = Modifier.padding(start = 36.dp, end = 36.dp),

@@ -13,6 +13,7 @@ import androidx.compose.ui.Alignment.Companion.CenterHorizontally
 import androidx.compose.ui.Alignment.Companion.CenterVertically
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalLifecycleOwner
@@ -24,6 +25,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.zIndex
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.LifecycleOwner
@@ -108,10 +110,11 @@ fun PlayerScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(brown)
     ) {
         Row(
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(darkBackground)
         ) {
             // folder choosing view
             Icon(
@@ -173,12 +176,10 @@ fun PlayerScreen(
         if (orientationPortrait) {
             Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .background(brown),
+                    .fillMaxWidth(),
                 horizontalAlignment = CenterHorizontally
             ) {
                 VinylPlayerView(
-//                    modifier = Modifier.weight(1f),
                     vinylSize = vinylSize,
                     discAnimationState = discAnimationState.value,
                     playerStateTransition = { oldState ->
@@ -291,7 +292,7 @@ fun PlayerScreen(
 
     // track preparing loading view
     if (localState is UiState.Loading
-//        || currentPlayingTrack.value == null
+        || currentPlayingTrack.value == null
     ) {
         Dialog(onDismissRequest = {}) {
             Box(

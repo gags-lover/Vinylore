@@ -2,18 +2,24 @@ package com.github.astat1cc.vinylore.player.ui.views.vinyl
 
 import android.graphics.Bitmap
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.dp
 import com.github.astat1cc.vinylore.R
+import com.github.astat1cc.vinylore.core.theme.steelGray
 
 @Composable
 fun VinylView(
@@ -26,22 +32,6 @@ fun VinylView(
             .aspectRatio(1.0f)
             .clip(VinylShape())
     ) {
-
-        // Vinyl platter
-//        Box(
-//            modifier = Modifier
-////                .padding(4.dp)
-//                .padding(6.dp)
-//                .clip(CircleShape)
-//                .fillMaxSize()
-//                .border(width = 4.dp, color = steelGray, shape = CircleShape)
-//                .background(Color.Black),
-////            painter = painterResource(id = R.drawable.matte),
-////            contentDescription = null,
-////            contentScale = ContentScale.Crop,
-////            alpha = 0.4f
-//        )
-
         // Vinyl background
         Image(
             modifier = Modifier
@@ -57,7 +47,7 @@ fun VinylView(
                 .fillMaxSize(),
             painter = painterResource(id = R.drawable.vinyl_light),
             contentDescription = "",
-            alpha = 0.8f
+            alpha = 0.8f // todo prepare image
         )
 
         // Vinyl 'album' cover

@@ -3,9 +3,12 @@ package com.github.astat1cc.vinylore
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.unit.IntOffset
@@ -18,6 +21,8 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.github.astat1cc.vinylore.albumlist.ui.AlbumListScreen
 import com.github.astat1cc.vinylore.core.theme.brown
+import com.github.astat1cc.vinylore.core.theme.darkBackground
+import com.github.astat1cc.vinylore.core.theme.newBrown
 import com.github.astat1cc.vinylore.navigation.NavigationTree
 import com.github.astat1cc.vinylore.player.ui.PlayerScreen
 import com.github.astat1cc.vinylore.tracklist.ui.TrackListScreen
@@ -32,7 +37,7 @@ fun ApplicationScreen() {
     val navController = rememberAnimatedNavController()
 
     AnimatedNavHost(
-        modifier = Modifier.background(Color.Black),
+        modifier = Modifier.background(darkBackground).statusBarsPadding(),
         navController = navController,
         startDestination = NavigationTree.Player.name
     ) {

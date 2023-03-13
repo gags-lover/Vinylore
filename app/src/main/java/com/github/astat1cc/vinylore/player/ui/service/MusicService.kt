@@ -215,7 +215,7 @@ class MusicService : MediaBrowserServiceCompat() {
                 trackExoPlayer.playbackParameters =
                     PlaybackParameters(
                         currentSpeed,
-                        0.7f + currentSpeed / 3.3f
+                        0.6f + currentSpeed / 2.5f
                     )
                 trackExoPlayer.volume = currentSpeed
                 crackleExoPlayer.volume = currentSpeed
@@ -247,7 +247,7 @@ class MusicService : MediaBrowserServiceCompat() {
                 trackExoPlayer.playbackParameters =
                     PlaybackParameters(
                         currentSpeed,
-                        0.7f + currentSpeed / 3.3f
+                        0.6f + currentSpeed / 2.5f
                     )
                 trackExoPlayer.volume = currentSpeed
                 crackleExoPlayer.volume = currentSpeed

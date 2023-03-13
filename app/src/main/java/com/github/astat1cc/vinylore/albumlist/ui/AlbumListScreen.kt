@@ -147,13 +147,9 @@ fun AlbumListScreen(
                                 )
                                 LazyColumn(
                                     modifier = Modifier
-                                        .padding(top = 8.dp)
                                         .fillMaxSize(),
                                     horizontalAlignment = Alignment.CenterHorizontally,
-//                                    contentPadding = PaddingValues(
-//                                        top = 20.dp,
-//                                        bottom = 20.dp
-//                                    )
+                                    contentPadding = PaddingValues(top = 8.dp, bottom = 20.dp)
                                 ) {
                                     viewModel.disableAlbumsScan()
                                     items(localState.data) { album ->

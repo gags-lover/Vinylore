@@ -22,6 +22,7 @@ import com.google.android.exoplayer2.ext.mediasession.MediaSessionConnector
 import com.google.android.exoplayer2.upstream.cache.CacheDataSource
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import org.koin.android.ext.android.inject
 
@@ -51,7 +52,7 @@ class MusicService : MediaBrowserServiceCompat() {
 
     companion object {
         // todo do normal way
-        private var _curSongDuration = MutableStateFlow(0L)
+        private val _curSongDuration = MutableStateFlow(0L)
         val curSongDuration = _curSongDuration.asStateFlow()
 
         private const val TAG = "MusicService"
@@ -95,7 +96,7 @@ class MusicService : MediaBrowserServiceCompat() {
 
         musicNotificationManager.showNotification(trackExoPlayer)
 
-        startPlayersSync() // todo if this right
+//        startPlayersSync() // todo if this right
     }
 
     private fun loadSource() {
@@ -105,7 +106,7 @@ class MusicService : MediaBrowserServiceCompat() {
     }
 
     var sync = false
-    fun startPlayersSync() {
+    private fun startPlayersSync() {
         sync = true
         serviceScope.launch {
             while (sync) {
@@ -115,7 +116,7 @@ class MusicService : MediaBrowserServiceCompat() {
         }
     }
 
-    fun stopPlayerSync() {
+    private fun stopPlayerSync() {
         sync = false
     }
 
@@ -124,6 +125,7 @@ class MusicService : MediaBrowserServiceCompat() {
 
         serviceScope.cancel()
         trackExoPlayer.release()
+        Log.e("service","destroy")
     }
 
     override fun onGetRoot(

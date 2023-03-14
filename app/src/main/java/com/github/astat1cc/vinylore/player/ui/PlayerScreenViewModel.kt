@@ -17,6 +17,7 @@ import com.github.astat1cc.vinylore.player.ui.service.*
 import com.github.astat1cc.vinylore.player.ui.views.tonearm.TonearmState
 import com.github.astat1cc.vinylore.player.ui.views.vinyl.VinylDiscState
 import com.github.astat1cc.vinylore.core.models.ui.UiState
+import com.google.android.exoplayer2.C
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -57,8 +58,7 @@ class PlayerScreenViewModel(
     private val _tonearmRotation = MutableStateFlow<Float>(0f)
     val tonearmRotation: StateFlow<Float> = _tonearmRotation.asStateFlow()
 
-    private val _shouldRefreshMusicService = MutableStateFlow(false)
-    val shouldRefreshMusicService: StateFlow<Boolean> = _shouldRefreshMusicService.asStateFlow()
+    val shouldRefreshScreen = serviceConnection.shouldRefreshMusicService
 
 // added to escape situations when asynchronous animatable changing rotation even after stop
 // (situation when navigating to another album)
@@ -71,7 +71,7 @@ class PlayerScreenViewModel(
 
 //    private val albumChosenRecently = serviceConnection.albumChosenRecently
 
-    val currentPlayingTrackName: StateFlow<AudioTrackUi?> =
+    val currentPlayingTrack: StateFlow<AudioTrackUi?> =
         serviceConnection.currentPlayingTrack.map { track ->
             // this checking helps skip moments when user have chosen new album, it navigates to
             // PlayerScreen, but there's previous playing track emitted, and album cover on the
@@ -131,6 +131,7 @@ class PlayerScreenViewModel(
     val albumPreparedRecently: StateFlow<Boolean?> = serviceConnection.albumPreparedRecently
 
     init {
+//        Log.e("service", this.hashCode().toString())
         updatePlayback()
         with(viewModelScope) {
             launch {
@@ -410,15 +411,14 @@ class PlayerScreenViewModel(
         }
     }
 
-    private var refreshCalled = false
     fun composableIsVisible() {
         shouldShowSmoothStartAndStopVinylAnimation.value = true
-        if (uiState.value !is UiState.Success && !refreshCalled && appWasHidden) {
-            refreshCalled = true
-            _shouldRefreshMusicService.value = true
-            Log.e("refresh", "Refresh called")
-        }
-        appWasHidden = false
+//        if (uiState.value !is UiState.Success && !refreshCalled && appWasHidden) {
+//        if (serviceDestroyed.value && appWasHidden) {
+//            serviceConnection.refreshService()
+//            Log.e("refresh", "Refresh called")
+//        }
+//        appWasHidden = false
     }
 
     private var appWasHidden = false

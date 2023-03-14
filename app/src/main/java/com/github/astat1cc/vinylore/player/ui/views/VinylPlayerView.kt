@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.dp
 import com.github.astat1cc.vinylore.R
 import com.github.astat1cc.vinylore.core.models.ui.AudioTrackUi
 import com.github.astat1cc.vinylore.core.theme.brownForGradient
+import com.github.astat1cc.vinylore.core.theme.darkBackground
 import com.github.astat1cc.vinylore.core.theme.newBrown
 import com.github.astat1cc.vinylore.core.theme.steelGray
 import com.github.astat1cc.vinylore.player.ui.views.tonearm.TonearmAnimated
@@ -76,21 +77,36 @@ fun VinylPlayerView(
 //        )
     Box(
         modifier = modifierConsideringOrientation
-            .shadow(elevation = 8.dp, clip = true)
-            .clip(RoundedCornerShape(8.dp))
 //            .background(brownForGradient)
         ,
         contentAlignment = Alignment.Center
     ) {
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .height(8.dp)
+                .align(Alignment.TopStart)
+                .background(darkBackground)
+        )
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .height(20.dp)
+                .align(Alignment.BottomStart)
+                .background(brownForGradient)
+        )
         Image(
             modifier = Modifier
-                .matchParentSize(),
+                .padding(bottom = 8.dp)
+                .shadow(elevation = 6.dp, clip = true)
+                .matchParentSize()
+                .clip(RoundedCornerShape(8.dp)),
             painter = painterResource(id = R.drawable.wood_background),
             contentDescription = null,
             contentScale = ContentScale.FillBounds
         )
 
-        Box(modifier = Modifier.padding(vertical = 32.dp)) {
+        Box(modifier = Modifier.padding(top = 32.dp, bottom = 40.dp)) {
             // Vinyl platter
             Box(
                 modifier = Modifier

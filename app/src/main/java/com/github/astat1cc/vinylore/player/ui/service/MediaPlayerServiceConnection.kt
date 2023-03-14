@@ -37,6 +37,9 @@ class MediaPlayerServiceConnection(
     private val _albumPreparedRecently = MutableStateFlow<Boolean?>(null)
     val albumPreparedRecently: StateFlow<Boolean?> = _albumPreparedRecently.asStateFlow()
 
+    private val _shouldRefreshMusicService = MutableSharedFlow<Boolean>(replay = 0)
+    val shouldRefreshMusicService: SharedFlow<Boolean> = _shouldRefreshMusicService.asSharedFlow()
+
     private val connectionScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
 
     private lateinit var mediaController: MediaControllerCompat
@@ -176,6 +179,22 @@ class MediaPlayerServiceConnection(
         _albumPreparedRecently.value = false
     }
 
+    private var refreshCalled = false
+    private fun refreshService() {
+        if (refreshCalled) return
+        refreshCalled = true
+        connectionScope.launch {
+            _shouldRefreshMusicService.emit(true)
+        }
+    }
+
+//    fun refreshUsed() {
+//        refreshCalled = false
+//        connectionScope.launch {
+//            _shouldRefreshMusicService.emit(false)
+//        }
+//    }
+
     private inner class MediaBrowserConnectionCallback(
         private val context: Context
     ) : MediaBrowserCompat.ConnectionCallback() {
@@ -202,6 +221,8 @@ class MediaPlayerServiceConnection(
             super.onPlaybackStateChanged(state)
 
             _playbackState.value = state
+            if (state?.state == PlaybackStateCompat.STATE_NONE) refreshService()
+            Log.e("service", state.toString())
         }
 
         override fun onMetadataChanged(metadata: MediaMetadataCompat?) {
@@ -212,6 +233,7 @@ class MediaPlayerServiceConnection(
                     track.uri == metadata.description.mediaUri
                 }
             }
+            refreshCalled = false
         }
 
         override fun onSessionDestroyed() {

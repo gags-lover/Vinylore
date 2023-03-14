@@ -56,7 +56,7 @@ fun TrackInfoAndControlView(
         verticalArrangement = Arrangement.Center
     ) {
         Column(
-            modifier = Modifier.padding(vertical = 8.dp),
+            modifier = Modifier.padding(bottom = 8.dp, top= 32.dp),
 //            Modifier.height(112.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
@@ -104,6 +104,7 @@ fun TrackInfoAndControlView(
             )
         )
         AudioControl(
+            modifier = Modifier.weight(1f),
             discState = discAnimationState,
             clickTogglePlayPause = togglePlayPause,
             clickSkipPrevious = skipToPrevious,

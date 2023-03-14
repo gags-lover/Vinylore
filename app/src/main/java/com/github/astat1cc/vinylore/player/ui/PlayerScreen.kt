@@ -1,19 +1,17 @@
 package com.github.astat1cc.vinylore.player.ui
 
 import android.content.res.Configuration
+import android.util.Log
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment.Companion.Center
 import androidx.compose.ui.Alignment.Companion.CenterHorizontally
 import androidx.compose.ui.Alignment.Companion.CenterVertically
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalLifecycleOwner
@@ -25,7 +23,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.zIndex
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.LifecycleOwner
@@ -58,14 +55,18 @@ fun PlayerScreen(
     val tonearmAnimationState = viewModel.tonearmAnimationState.collectAsState()
     val discRotation = viewModel.discRotation.collectAsState()
     val tonearmRotation = viewModel.tonearmRotation.collectAsState()
-    val currentPlayingTrack = viewModel.currentPlayingTrackName.collectAsState()
+    val currentPlayingTrack = viewModel.currentPlayingTrack.collectAsState()
     val trackProgress = viewModel.currentTrackProgress.collectAsState()
     val tonearmLifted = viewModel.tonearmLifted.collectAsState()
     val albumPreparedRecently = viewModel.albumPreparedRecently.collectAsState()
-    val shouldRefreshScreen = viewModel.shouldRefreshMusicService.collectAsState()
+    val shouldRefreshScreen = viewModel.shouldRefreshScreen.collectAsState(initial = false)
 
-    if (shouldRefreshScreen.value) {
+    var refreshCalled by remember { mutableStateOf(false) }
+    if (shouldRefreshScreen.value && !refreshCalled) {
+        Log.e("service", "${shouldRefreshScreen.value} vm: ${viewModel.hashCode()}")
+        refreshCalled = true
         navController.navigate(NavigationTree.Player.name) {
+            viewModel.refreshCalled()
             navController.popBackStack(
                 NavigationTree.Player.name,
                 inclusive = true

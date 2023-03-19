@@ -17,4 +17,6 @@
     <string name="track_list">TRACK LIST</string>
     <string name="preparing_media">Preparing media…</string>
     <string name="scanning_folders">Scanning folders…</string>
+    <string name="refresh">Refresh</string>
+    <string name="change_root">Change root</string>
 </resources>

@@ -1,6 +1,5 @@
 package com.github.astat1cc.vinylore.tracklist.ui
 
-import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -26,7 +25,6 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import com.github.astat1cc.vinylore.R
 import com.github.astat1cc.vinylore.core.models.ui.UiState
-import com.github.astat1cc.vinylore.core.theme.brown
 import com.github.astat1cc.vinylore.core.theme.darkBackground
 import com.github.astat1cc.vinylore.core.theme.vintagePaper
 import com.github.astat1cc.vinylore.tracklist.ui.views.TrackView

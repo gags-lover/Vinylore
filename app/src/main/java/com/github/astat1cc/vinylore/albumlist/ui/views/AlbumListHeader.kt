@@ -3,15 +3,11 @@ package com.github.astat1cc.vinylore.albumlist.ui.views
 import android.net.Uri
 import androidx.activity.compose.ManagedActivityResultLauncher
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.Icon
-import androidx.compose.material.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
+import androidx.compose.material.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment.Companion.CenterVertically
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -23,25 +19,29 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.github.astat1cc.vinylore.R
+import com.github.astat1cc.vinylore.core.theme.brown
 
 @Composable
 fun AlbumListHeader(
     refreshButtonListener: () -> Unit,
+    backButtonListener: () -> Unit,
     getDirLauncher: ManagedActivityResultLauncher<Uri?, Uri?>
 ) {
-    Box(Modifier.fillMaxWidth()) {
+    var showPopup by remember { mutableStateOf(false) }
+
+    Row(Modifier.fillMaxWidth(), verticalAlignment = CenterVertically) {
+        // back button
         Icon(
-            painter = painterResource(id = R.drawable.ic_change_folder),
+            painter = painterResource(R.drawable.ic_arrow_back),
             contentDescription = null,
             tint = Color.White,
             modifier = Modifier
                 .padding(4.dp)
                 .clip(CircleShape)
+                .clickable(onClick = {
+                    backButtonListener()
+                })
                 .size(48.dp)
-                .align(Alignment.CenterStart)
-                .clickable {
-                    getDirLauncher.launch(null)
-                }
                 .padding(12.dp)
         )
         Text(
@@ -51,23 +51,115 @@ fun AlbumListHeader(
             textAlign = TextAlign.Center,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier
-                .align(Alignment.Center)
-                .padding(horizontal = 60.dp),
+                .weight(1f)
+                .padding(8.dp),
+//                .padding(horizontal = 60.dp),
             fontWeight = FontWeight.Bold
         )
-        Icon(
-            painter = painterResource(id = R.drawable.ic_refresh),
-            contentDescription = null,
-            tint = Color.White,
-            modifier = Modifier
-                .padding(4.dp)
-                .clip(CircleShape)
-                .size(48.dp)
-                .align(Alignment.CenterEnd)
-                .clickable {
-                    refreshButtonListener()
-                }
-                .padding(12.dp)
+
+//        AnimatedVisibility(visible = showPopup) {
+        val dropdownMenuItems = listOf(
+            AppDropdownMenuItem(
+                text = stringResource(R.string.refresh),
+                onClick = { refreshButtonListener() },
+                iconRes = R.drawable.ic_refresh
+            ),
+            AppDropdownMenuItem(
+                text = stringResource(R.string.change_root),
+                onClick = { getDirLauncher.launch(null) },
+                iconRes = R.drawable.ic_change_root_folder
+            )
         )
+        Box() {
+            // more button
+            Icon(
+                painter = painterResource(id = R.drawable.ic_more),
+                contentDescription = null,
+                tint = Color.White,
+                modifier = Modifier
+                    .padding(4.dp)
+                    .clip(CircleShape)
+                    .size(48.dp)
+                    .clickable {
+                        showPopup = true
+                    }
+                    .padding(12.dp)
+            )
+            DropdownMenu(
+                expanded = showPopup,
+                onDismissRequest = { showPopup = false }
+            ) {
+                dropdownMenuItems.forEachIndexed { index, item ->
+                    DropdownMenuItem(
+                        onClick = { item.onClick() },
+                        contentPadding = PaddingValues(0.dp)
+                    ) {
+                        Column {
+                            Row(
+                                verticalAlignment = CenterVertically,
+                                modifier = Modifier.padding(end = 16.dp)
+                            ) {
+                                Icon(
+                                    painter = painterResource(id = item.iconRes),
+                                    contentDescription = null,
+                                    tint = brown,
+                                    modifier = Modifier
+                                        .padding(4.dp)
+                                        .clip(CircleShape)
+                                        .size(48.dp)
+                                        .padding(12.dp)
+                                )
+                                Text(text = item.text)
+                            }
+                            if (index < dropdownMenuItems.size - 1) {
+                                Divider(modifier = Modifier.padding(horizontal = 8.dp))
+                            }
+                        }
+                    }
+                }
+            }
+//            Popup(
+//                alignment = TopEnd,
+//                onDismissRequest = { showPopup = false },
+//                properties = PopupProperties(focusable = true),
+////                offset = IntOffset(-20, 20)
+//            ) {
+//                Column(
+//                    Modifier
+//                        .clip(RoundedCornerShape(8.dp))
+//                        .background(Color.White)
+//                        .padding(8.dp),
+//                ) {
+//                    Icon(
+//                        painter = painterResource(id = R.drawable.ic_change_folder),
+//                        contentDescription = null,
+//                        tint = brown,
+//                        modifier = Modifier
+//                            .padding(4.dp)
+//                            .clip(CircleShape)
+//                            .size(48.dp)
+//                            .clickable {
+//                                getDirLauncher.launch(null)
+//                            }
+//                            .padding(12.dp)
+//                    )
+//                    Icon(
+//                        painter = painterResource(id = R.drawable.ic_refresh),
+//                        contentDescription = null,
+//                        tint = brown,
+//                        modifier = Modifier
+//                            .padding(4.dp)
+//                            .clip(CircleShape)
+//                            .size(48.dp)
+//                            .clickable {
+//                                refreshButtonListener()
+//                            }
+//                            .padding(12.dp)
+//                    )
+//                }
+//            }
+        }
     }
 }
+
+data class AppDropdownMenuItem(val text: String, val onClick: () -> Unit, val iconRes: Int)

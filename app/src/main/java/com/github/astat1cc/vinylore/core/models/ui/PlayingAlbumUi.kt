@@ -15,7 +15,7 @@ data class PlayingAlbumUi(
 
         fun fromDomain(album: AppPlayingAlbum) = with(album) {
             PlayingAlbumUi(
-                folderPath.toUri(),
+                folderPath,
                 name,
                 trackList.map { albumDomain -> AudioTrackUi.fromDomain(albumDomain) },
                 albumOfOneArtist

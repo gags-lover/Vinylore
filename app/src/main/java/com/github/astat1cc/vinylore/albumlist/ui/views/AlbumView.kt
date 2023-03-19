@@ -21,8 +21,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.zIndex
 import com.github.astat1cc.vinylore.R
 import com.github.astat1cc.vinylore.core.models.ui.ListingAlbumUi
+import com.github.astat1cc.vinylore.player.ui.views.dpToSp
 
 @Composable
 fun AlbumView(
@@ -31,75 +33,77 @@ fun AlbumView(
     clickedAlbumUri: Uri?,
     screenWidth: Int
 ) {
-    MaterialTheme {
-        Row(
+//    MaterialTheme {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable {
+                onClick(album.uri)
+            }
+            .padding(vertical = 20.dp, horizontal = 36.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
             modifier = Modifier
-                .fillMaxWidth()
-                .clickable {
-                    onClick(album.uri)
-                }
-                .padding(vertical = 20.dp, horizontal = 36.dp),
-            verticalAlignment = Alignment.CenterVertically,
+                .size(width = 160.dp, height = 100.dp)
+                .zIndex(1f)
         ) {
-            Box(modifier = Modifier.size(width = 160.dp, height = 100.dp)) {
-                androidx.compose.animation.AnimatedVisibility(
-                    visible = clickedAlbumUri != album.uri,
-                    exit = slideOutHorizontally(
-                        targetOffsetX = { screenWidth },
-                        animationSpec = tween(
-                            durationMillis = 250,
-                            easing = LinearEasing,
+            androidx.compose.animation.AnimatedVisibility(
+                visible = clickedAlbumUri != album.uri,
+                exit = slideOutHorizontally(
+                    targetOffsetX = { screenWidth },
+                    animationSpec = tween(
+                        durationMillis = 250,
+                        easing = LinearEasing,
 //                        delayMillis = 20
-                        )
                     )
+                )
+            ) {
+                Box(
+                    contentAlignment = Alignment.CenterStart,
                 ) {
-                    Box(
-                        contentAlignment = Alignment.CenterStart,
-                    ) {
-//                    Image(
-//                        painter = painterResource(R.drawable.vinyl_under_mockup),
-//                        contentDescription = "",
-//                        modifier = Modifier
-//                            .padding(start = 48.dp)
-//                            .height(100.dp),
-//                        contentScale = ContentScale.FillHeight,
-//                    )
-                        // show second vinyl showing from mockup until it goes into animation. It
-                        // increases animation performance
-//                        if (clickedAlbumId != album.id) {
-                        // second vinyl under mockup
-                        Image(
-                            painter = painterResource(R.drawable.vinyl_under_mockup),
-                            contentDescription = "",
-                            modifier = Modifier
-                                .padding(start = 40.dp)
-                                .height(100.dp),
-                            contentScale = ContentScale.FillHeight,
-                        )
-                        Image(
-                            painter = painterResource(R.drawable.vinyl_under_mockup),
-                            contentDescription = "",
-                            modifier = Modifier
-                                .padding(start = 32.dp)
-                                .height(100.dp),
-                            contentScale = ContentScale.FillHeight,
-                        )
-//                        }
-//                        // main vinyl under mockup
-//                        VinylUnderMockupView(
-//                            albumCover = album.trackList[0].albumCover,
+//                        // second vinyl under mockup
+//                        Image(
+//                            painter = painterResource(R.drawable.vinyl_under_mockup),
+//                            contentDescription = "",
+//                            modifier = Modifier
+//                                .padding(start = 40.dp)
+//                                .height(100.dp),
+//                            contentScale = ContentScale.FillHeight,
+//                        )
+//                        // first vinyl under mockup
+//                        Image(
+//                            painter = painterResource(R.drawable.vinyl_under_mockup),
+//                            contentDescription = "",
 //                            modifier = Modifier
 //                                .padding(start = 32.dp)
-//                                .height(100.dp)
+//                                .height(100.dp),
+//                            contentScale = ContentScale.FillHeight,
 //                        )
-                        // mockup
-                        Image(
-                            painter = painterResource(R.drawable.album_mockup),
-                            contentDescription = "",
-                            modifier = Modifier.width(160.dp),
-                            contentScale = ContentScale.FillWidth,
-                        )
-                    }
+//                        // mockup
+//                        Image(
+//                            painter = painterResource(R.drawable.album_mockup),
+//                            contentDescription = "",
+//                            modifier = Modifier.width(160.dp),
+//                            contentScale = ContentScale.FillWidth,
+//                        )
+                    Image(
+                        painter = painterResource(R.drawable.album_in_list),
+                        contentDescription = null,
+                        modifier = Modifier.width(160.dp),
+                        contentScale = ContentScale.FillWidth,
+                    )
+                    Text(
+                        text = "${album.trackCount} track${if (album.trackCount > 1) "s" else ""}",
+                        modifier = Modifier
+                            .align(Alignment.Center)
+                            .padding(end = 48.dp, start = 4.dp),
+                        textAlign = TextAlign.Center,
+//                            fontWeight = FontWeight.Bold,
+                        fontSize = dpToSp(dp = 16.dp),
+                        fontWeight = FontWeight.Bold
+                    )
+                }
 //            Image(
 //                painter = painterResource(R.drawable.album),
 //                contentDescription = "",
@@ -108,20 +112,20 @@ fun AlbumView(
 //                    .clipToBounds(),
 //                contentScale = ContentScale.FillWidth,
 //            )
-                }
             }
-            Text(
-                text = album.name ?: stringResource(id = R.string.unknown_name),
-                maxLines = 2,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(start = 12.dp),
-                textAlign = TextAlign.Center,
-                color = Color.White,
-                fontSize = 19.sp,
-                fontWeight = FontWeight.Bold,
-                overflow = TextOverflow.Ellipsis
-            )
         }
+        Text(
+            text = album.name ?: stringResource(id = R.string.unknown_name),
+            maxLines = 2,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 12.dp),
+            textAlign = TextAlign.Center,
+            color = Color.White,
+            fontSize = 19.sp,
+            fontWeight = FontWeight.Bold,
+            overflow = TextOverflow.Ellipsis
+        )
     }
 }
+//}

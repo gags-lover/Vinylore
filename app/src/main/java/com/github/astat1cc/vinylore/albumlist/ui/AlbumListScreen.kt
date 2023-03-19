@@ -143,6 +143,7 @@ fun AlbumListScreen(
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                 AlbumListHeader(
                                     refreshButtonListener = { viewModel.enableAlbumsScan() },
+                                    backButtonListener = { navController.navigateUp() },
                                     getDirLauncher = getDirLauncher
                                 )
                                 LazyColumn(

@@ -38,7 +38,7 @@ fun TrackInfoAndControlView(
     skipToPrevious: () -> Unit,
     skipToNext: () -> Unit,
     title: String,
-    artist: String,
+    artist: String?,
 ) {
     Column(
         modifier = modifier
@@ -55,35 +55,54 @@ fun TrackInfoAndControlView(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Column(
-            modifier = Modifier.padding(bottom = 8.dp, top= 32.dp),
+        if (artist != null) {
+            Column(
+                modifier = Modifier.padding(bottom = 8.dp, top = 32.dp, start = 20.dp, end = 20.dp),
 //            Modifier.height(112.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                // title
+                Text(
+                    text = title,
+                    fontSize = 24.sp,
+                    maxLines = 1,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier
+                        .fillMaxWidth(),
+                    overflow = TextOverflow.Ellipsis,
+                    color = Color.White
+                )
+                // artist
+                Text(
+                    text = artist,
+                    fontSize = 18.sp,
+                    maxLines = 1,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier
+                        .padding(top = 4.dp)
+                        .fillMaxWidth(),
+                    overflow = TextOverflow.Ellipsis,
+                    color = vintagePaper
+                )
+            }
+        } else {
+            // if artist == null title represents the file's name, so it'd be placed in 2 lined Text
+            // view
             Text(
                 text = title,
                 fontSize = 24.sp,
-                maxLines = 1,
+                minLines = 2,
+                maxLines = 2,
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center,
                 modifier = Modifier
-                    .padding(horizontal = 20.dp)
+                    .padding(start = 20.dp, end = 20.dp, bottom = 8.dp, top = 32.dp)
                     .fillMaxWidth(),
                 overflow = TextOverflow.Ellipsis,
-                color = Color.White, // todo or vintage paper? and think about everywhere else as well
-            )
-            Text(
-                text = artist,
-                fontSize = 18.sp,
-                maxLines = 1,
-                fontWeight = FontWeight.Bold,
-                textAlign = TextAlign.Center,
-                modifier = Modifier
-                    .padding(start = 20.dp, end = 20.dp, top = 4.dp)
-                    .fillMaxWidth(),
-                overflow = TextOverflow.Ellipsis,
-                color = vintagePaper, // todo or vintage paper? and think about everywhere else as well
+                color = Color.White
             )
         }
         // progress slider

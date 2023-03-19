@@ -16,7 +16,7 @@ data class AudioTrackUi(
     companion object {
 
         fun fromDomain(track: AppAudioTrack) = with(track) {
-            AudioTrackUi(filePath.toUri(), title, artist, duration, albumCover)
+            AudioTrackUi(filePath, title, artist, duration, albumCover)
         }
     }
 }

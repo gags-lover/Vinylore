@@ -64,9 +64,9 @@ fun PlayerScreen(
     var refreshCalled by remember { mutableStateOf(false) }
     if (shouldRefreshScreen.value && !refreshCalled) {
         Log.e("service", "${shouldRefreshScreen.value} vm: ${viewModel.hashCode()}")
-        refreshCalled = true
+        refreshCalled = true // todo
         navController.navigate(NavigationTree.Player.name) {
-            viewModel.refreshCalled()
+//            viewModel.refreshCalled()
             navController.popBackStack(
                 NavigationTree.Player.name,
                 inclusive = true
@@ -213,7 +213,7 @@ fun PlayerScreen(
 //                        track.artist + " — " + track.title
 //                    } ?: "",
                     title = currentPlayingTrack.value?.title ?: "",
-                    artist = currentPlayingTrack.value?.artist ?: "",
+                    artist = currentPlayingTrack.value?.artist,
                     trackProgress = trackProgress.value,
                     sliderDraggingFinished = { viewModel.sliderDraggingFinished() },
                     sliderDragging = { newValue ->
@@ -285,7 +285,7 @@ fun PlayerScreen(
                     skipToPrevious = { viewModel.skipToPrevious() },
                     skipToNext = { viewModel.skipToNext() },
                     title = currentPlayingTrack.value?.title ?: "",
-                    artist = currentPlayingTrack.value?.artist ?: "",
+                    artist = currentPlayingTrack.value?.artist,
                 )
             }
         }

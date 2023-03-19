@@ -23,7 +23,6 @@ import com.github.astat1cc.vinylore.R
 import com.github.astat1cc.vinylore.core.models.ui.AudioTrackUi
 import com.github.astat1cc.vinylore.core.theme.brownForGradient
 import com.github.astat1cc.vinylore.core.theme.darkBackground
-import com.github.astat1cc.vinylore.core.theme.newBrown
 import com.github.astat1cc.vinylore.core.theme.steelGray
 import com.github.astat1cc.vinylore.player.ui.views.tonearm.TonearmAnimated
 import com.github.astat1cc.vinylore.player.ui.views.tonearm.TonearmState
@@ -54,14 +53,25 @@ fun VinylPlayerView(
     // (if param is false or null) we need to emit this variable to true initially, so animation wouldn't
     // appear.
     var vinylIsVisible by remember {
-        mutableStateOf(shouldShowVinylAppearanceAnimation != null && !shouldShowVinylAppearanceAnimation)
+        mutableStateOf(
+            shouldShowVinylAppearanceAnimation != null && !shouldShowVinylAppearanceAnimation
+//            false
+        )
     }
+//    Log.e(
+//        "appearance",
+//        "shouldShowAppearance $shouldShowVinylAppearanceAnimation, vinyl is Visible $vinylIsVisible"
+//    )
 
     LaunchedEffect(shouldShowVinylAppearanceAnimation) {
         if (shouldShowVinylAppearanceAnimation != true) return@LaunchedEffect
         delay(400L)
         vinylIsVisible = true
         vinylAppearanceAnimationShown()
+//        Log.e(
+//            "appearance",
+//            "completion of launched effect"
+//        )
     }
 
     val modifierConsideringOrientation =
@@ -75,26 +85,40 @@ fun VinylPlayerView(
 //                .height(8.dp)
 //                .background(brownForGradient)
 //        )
+    val patchModifierConsideringOrientation =
+        if (orientationPortrait) Modifier.fillMaxWidth() else Modifier
     Box(
         modifier = modifierConsideringOrientation
 //            .background(brownForGradient)
         ,
         contentAlignment = Alignment.Center
     ) {
-        Box(
-            Modifier
-                .fillMaxWidth()
-                .height(8.dp)
-                .align(Alignment.TopStart)
-                .background(darkBackground)
-        )
-        Box(
-            Modifier
-                .fillMaxWidth()
-                .height(20.dp)
-                .align(Alignment.BottomStart)
-                .background(brownForGradient)
-        )
+        if (orientationPortrait) {
+            Box(
+                patchModifierConsideringOrientation
+                    .height(8.dp)
+                    .align(Alignment.TopStart)
+                    .background(darkBackground)
+            )
+            Box(
+                patchModifierConsideringOrientation
+                    .height(20.dp)
+                    .align(Alignment.BottomStart)
+                    .background(brownForGradient)
+            )
+        } else {
+            Box(
+                // it gives 8.dp height line on top with fillMaxWidth behaviour. Can't use fillMaxWidth
+                // itself because then player view fills all the screen, while it shouldn't as long
+                // as orientation is landscape
+                patchModifierConsideringOrientation
+                    .padding(bottom = vinylSize - 8.dp)
+                    .matchParentSize()
+                    .align(Alignment.TopStart)
+                    .background(brownForGradient)
+            )
+        }
+        // background
         Image(
             modifier = Modifier
                 .padding(bottom = 8.dp)
@@ -106,7 +130,12 @@ fun VinylPlayerView(
             contentScale = ContentScale.FillBounds
         )
 
-        Box(modifier = Modifier.padding(top = 32.dp, bottom = 40.dp)) {
+        Box(
+            modifier = Modifier.padding(
+                top = 32.dp, bottom = 40.dp,
+                start = 16.dp, end = 16.dp
+            )
+        ) {
             // Vinyl platter
             Box(
                 modifier = Modifier
@@ -126,7 +155,9 @@ fun VinylPlayerView(
                     modifier = Modifier
                         .padding(start = 16.dp)
                         .width(vinylSize)
-                        .align(Alignment.CenterStart),
+                        .align(Alignment.CenterStart)
+//                        .alpha(0.5f)
+                    ,
                     discState = discAnimationState,
                     playerStateTransitionFrom = playerStateTransition,
                     currentRotation = discRotation,
@@ -135,10 +166,12 @@ fun VinylPlayerView(
                 )
             }
             TonearmAnimated(
-                modifier = Modifier
-                    .padding(start = vinylSize) // todo maybe row
-                    .height(vinylSize)
-                    .align(Alignment.CenterStart),
+                modifier = Modifier.align(Alignment.CenterStart)
+//                    .padding(start = vinylSize) // todo maybe row
+//                    .height(vinylSize)
+//                    .align(Alignment.CenterStart)
+                ,
+                vinylSize = vinylSize,
                 currentRotation = tonearmRotation,
                 tonearmState = tonearmAnimationState,
                 tonearmTransition = tonearmTransition,

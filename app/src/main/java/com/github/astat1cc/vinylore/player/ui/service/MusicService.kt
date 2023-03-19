@@ -22,7 +22,6 @@ import com.google.android.exoplayer2.ext.mediasession.MediaSessionConnector
 import com.google.android.exoplayer2.upstream.cache.CacheDataSource
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import org.koin.android.ext.android.inject
 
@@ -96,7 +95,7 @@ class MusicService : MediaBrowserServiceCompat() {
 
         musicNotificationManager.showNotification(trackExoPlayer)
 
-//        startPlayersSync() // todo if this right
+        startPlayersSync() // todo if this right
     }
 
     private fun loadSource() {
@@ -178,22 +177,27 @@ class MusicService : MediaBrowserServiceCompat() {
 
     private var savedTrackVolume = 0f
     private var savedCrackleVolume = 0f
-    private var alreadySaved = false
+    private var volumesAreAlreadySaved = false
     private fun mute() {
-        if (!alreadySaved) {
+        if (!volumesAreAlreadySaved) {
             savedTrackVolume = trackExoPlayer.volume
             savedCrackleVolume = crackleExoPlayer.volume
-            alreadySaved = true
+            volumesAreAlreadySaved = true
         }
         trackExoPlayer.volume = 0f
         crackleExoPlayer.volume = 0f
     }
 
     private fun unmute() {
-        trackExoPlayer.volume = savedTrackVolume
-        crackleExoPlayer.volume = savedCrackleVolume
-        alreadySaved = false
-        Log.e("volume", "${trackExoPlayer.volume} tep, ${crackleExoPlayer.volume} cep")
+        serviceScope.launch {
+            // delay to escape cases where seeking is not completed and user hears prev position
+            // sound for some time
+            delay(50L)
+
+            trackExoPlayer.volume = savedTrackVolume
+            crackleExoPlayer.volume = savedCrackleVolume
+            volumesAreAlreadySaved = false
+        }
     }
 
     private fun startTrackPlaying() {

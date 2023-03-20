@@ -10,13 +10,16 @@ data class AudioTrackUi(
     val title: String,
     val artist: String?,
     val duration: Long,
-    val albumCover: Bitmap?
+    val albumCover: Bitmap?,
+    val genre: String?,
+    val year: String?,
+    val bitrate: String?
 ) {
 
     companion object {
 
         fun fromDomain(track: AppAudioTrack) = with(track) {
-            AudioTrackUi(filePath, title, artist, duration, albumCover)
+            AudioTrackUi(filePath, title, artist, duration, albumCover, genre, year, bitrate)
         }
     }
 }

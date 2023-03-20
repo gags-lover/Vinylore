@@ -28,6 +28,7 @@ import java.util.concurrent.TimeUnit
 @Composable
 fun TrackView(
     track: AudioTrackUi,
+    trackPosition: Int,
     isCurrentlyPlaying: Boolean,
     onTrackViewClicked: () -> Unit,
     useTitleWithoutArtist: Boolean
@@ -45,6 +46,14 @@ fun TrackView(
                 .padding(vertical = 2.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+//            // track position
+//            Text(
+//                modifier = Modifier.padding(vertical = 12.dp, horizontal = 16.dp),
+//                text = "$trackPosition",
+//                maxLines = 1,
+//                fontWeight = FontWeight.SemiBold,
+//                fontSize = 16.sp
+//            )
             // Track name
             Text(
                 modifier = Modifier
@@ -63,12 +72,11 @@ fun TrackView(
             )
             // Duration view
             Text(
-                modifier = Modifier.padding(12.dp),
+                modifier = Modifier.padding(vertical = 12.dp, horizontal = 16.dp),
                 text = track.duration.toDurationStyle(),
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-                fontWeight = FontWeight.Bold,
-                fontSize = 18.sp
+                maxLines = 1,
+                fontWeight = FontWeight.SemiBold,
+                fontSize = 16.sp
             )
         }
     }

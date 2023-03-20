@@ -11,6 +11,7 @@ import com.github.astat1cc.vinylore.core.models.domain.AppPlayingAlbum
 import com.github.astat1cc.vinylore.core.models.domain.AppAudioTrack
 import com.github.astat1cc.vinylore.core.models.domain.AppListingAlbum
 import com.github.astat1cc.vinylore.core.util.removeUnderscoresAndPathSegment
+import java.lang.NumberFormatException
 
 // todo make try here to avoid crashes
 
@@ -148,19 +149,30 @@ interface AppFileProvider {
                         } catch (e: Exception) {
                             null
                         } // todo handle idiomatic way
-                        val titleRetrieved =
+                        val title =
                             mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_TITLE)
-                        val artistRetrieved =
+                        val artist =
                             mmr.extractMetadata((MediaMetadataRetriever.METADATA_KEY_ARTIST))
+                        val genre = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_GENRE)
+                        val year = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_YEAR)
+                            ?: mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DATE)
+                        val bitrate =
+                            mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_BITRATE)
+                                ?.let {
+                                    (it.toInt() / 1000).toString()
+                                }
                         AppAudioTrack(
                             filePath = file.uri,
-                            title = titleRetrieved ?: file.name?.removeUnderscoresAndPathSegment()
+                            title = title ?: file.name?.removeUnderscoresAndPathSegment()
                             ?: getDefaultName(),
-                            artist = artistRetrieved,
+                            artist = artist,
 //                        albumArtist = albumArtist,
                             duration = duration,
                             albumCover = albumCover,
-                            fileName = file.name ?: getDefaultName()
+                            fileName = file.name ?: getDefaultName(),
+                            genre = genre,
+                            year = year,
+                            bitrate = bitrate
                         )
                     } catch (e: Exception) {
                         null

@@ -12,6 +12,8 @@ import com.github.astat1cc.vinylore.core.models.domain.FetchResult
 import com.github.astat1cc.vinylore.core.models.ui.ListingAlbumUi
 import com.github.astat1cc.vinylore.core.models.ui.UiState
 import com.github.astat1cc.vinylore.player.ui.service.MediaPlayerServiceConnection
+import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -60,11 +62,18 @@ class AlbumListScreenViewModel(
         interactor.saveChosenDirectoryPath(uri.toString())
     }
 
-    fun onAlbumClick(albumUri: Uri) = viewModelScope.launch(dispatchers.io()) {
-        interactor.saveChosenPlayingAlbum(albumUri)
-        _clickedAlbumUri.value = albumUri
-        delay(600L) // delay of album slideOut animation
-    }
+    /**
+     * Function returns true if saving succeed and false if the clicked album is already the
+     * playing album.
+     */
+    suspend fun handleClickedAlbumUri(clickedAlbumUri: Uri): Boolean =
+        viewModelScope.async(dispatchers.io()) {
+            if (serviceConnection.playingAlbum.value?.uri == clickedAlbumUri) return@async false
+            interactor.saveChosenPlayingAlbum(clickedAlbumUri)
+            _clickedAlbumUri.value = clickedAlbumUri
+            delay(600L) // delay of album slideOut animation
+            return@async true
+        }.await()
 
     fun disableAlbumsScan() {
         interactor.disableAlbumsScan()

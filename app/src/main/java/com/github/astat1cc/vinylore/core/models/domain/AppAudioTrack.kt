@@ -9,5 +9,8 @@ data class AppAudioTrack(
     val duration: Long,
     val albumCover: Bitmap?,
     val artist: String?,
-    val fileName: String
+    val fileName: String,
+    val genre: String?,
+    val year: String?,
+    val bitrate: String?
 )

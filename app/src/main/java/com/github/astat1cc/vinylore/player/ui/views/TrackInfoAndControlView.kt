@@ -20,6 +20,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.github.astat1cc.vinylore.core.models.ui.AudioTrackUi
 import com.github.astat1cc.vinylore.core.theme.*
 import com.github.astat1cc.vinylore.player.ui.PlayerScreenViewModel
 import com.github.astat1cc.vinylore.player.ui.views.vinyl.AudioControl
@@ -37,8 +38,7 @@ fun TrackInfoAndControlView(
     togglePlayPause: () -> Unit,
     skipToPrevious: () -> Unit,
     skipToNext: () -> Unit,
-    title: String,
-    artist: String?,
+    track: AudioTrackUi?,
 ) {
     Column(
         modifier = modifier
@@ -55,16 +55,17 @@ fun TrackInfoAndControlView(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        if (artist != null) {
+        // track name
+        if (track?.artist != null) {
             Column(
-                modifier = Modifier.padding(bottom = 8.dp, top = 32.dp, start = 20.dp, end = 20.dp),
+                modifier = Modifier.padding(top = 32.dp, start = 20.dp, end = 20.dp),
 //            Modifier.height(112.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
                 // title
                 Text(
-                    text = title,
+                    text = track.title,
                     fontSize = 24.sp,
                     maxLines = 1,
                     fontWeight = FontWeight.Bold,
@@ -76,7 +77,7 @@ fun TrackInfoAndControlView(
                 )
                 // artist
                 Text(
-                    text = artist,
+                    text = track.artist,
                     fontSize = 18.sp,
                     maxLines = 1,
                     fontWeight = FontWeight.Bold,
@@ -92,19 +93,47 @@ fun TrackInfoAndControlView(
             // if artist == null title represents the file's name, so it'd be placed in 2 lined Text
             // view
             Text(
-                text = title,
+                text = track?.title
+                    ?: "", // equals "" only when preparing, so no track name is displayed
                 fontSize = 24.sp,
                 minLines = 2,
                 maxLines = 2,
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center,
                 modifier = Modifier
-                    .padding(start = 20.dp, end = 20.dp, bottom = 8.dp, top = 32.dp)
+                    .padding(start = 20.dp, end = 20.dp, top = 32.dp)
                     .fillMaxWidth(),
                 overflow = TextOverflow.Ellipsis,
                 color = Color.White
             )
         }
+
+        // genre, year, bitrate
+//        if (track?.genre != null || track?.year != null || track?.bitrate != null) {
+            val secondaryInfoItems = track?.let {
+                listOfNotNull(it.genre, it.year, it.bitrate?.let { bitrate -> "$bitrate kbp/s" })
+            }
+            Row(modifier = Modifier.padding(horizontal = 20.dp)) {
+                Text(
+                    text = secondaryInfoItems?.joinToString(
+                        separator = " | ",
+                        prefix = "",
+                        postfix = ""
+                    ) ?: "",
+                    fontSize = 14.sp,
+                    minLines = 1,
+                    maxLines = 2,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier
+                        .padding(vertical = 16.dp)
+                        .fillMaxWidth(),
+                    overflow = TextOverflow.Ellipsis,
+                    color = Color.LightGray
+                )
+            }
+//        }
+
         // progress slider
         Slider(
             modifier = Modifier.padding(start = 36.dp, end = 36.dp),

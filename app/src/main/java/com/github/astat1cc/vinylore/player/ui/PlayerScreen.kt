@@ -212,8 +212,7 @@ fun PlayerScreen(
 //                    playingTrackName = currentPlayingTrack.value?.let { track ->
 //                        track.artist + " — " + track.title
 //                    } ?: "",
-                    title = currentPlayingTrack.value?.title ?: "",
-                    artist = currentPlayingTrack.value?.artist,
+                    track = currentPlayingTrack.value,
                     trackProgress = trackProgress.value,
                     sliderDraggingFinished = { viewModel.sliderDraggingFinished() },
                     sliderDragging = { newValue ->
@@ -284,8 +283,7 @@ fun PlayerScreen(
                     },
                     skipToPrevious = { viewModel.skipToPrevious() },
                     skipToNext = { viewModel.skipToNext() },
-                    title = currentPlayingTrack.value?.title ?: "",
-                    artist = currentPlayingTrack.value?.artist,
+                    track = currentPlayingTrack.value,
                 )
             }
         }

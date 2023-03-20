@@ -5,6 +5,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.Icon
@@ -80,9 +81,10 @@ fun TrackListScreen(
                 ) {
                     LazyColumn(contentPadding = PaddingValues(vertical = 20.dp)) {
                         val album = localState.data.album!!
-                        items(album.trackList) { track ->
+                        itemsIndexed(album.trackList) { index, track ->
                             TrackView(
                                 track = track,
+                                trackPosition = index + 1,
                                 isCurrentlyPlaying = track == localState.data.currentPlayingTrack,
                                 useTitleWithoutArtist = album.albumOfOneArtist,
                                 onTrackViewClicked = {

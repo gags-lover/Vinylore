@@ -4,7 +4,6 @@ import android.content.Intent
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -69,13 +68,16 @@ fun AlbumListScreen(
         if (albumClickIsProcessing.value) return
         albumClickIsProcessing.value = true
         localCoroutineScope.launch {
-            viewModel.onAlbumClick(albumUri).join()
-            // todo add animation: mockup going to the right to indicate where track list is now
-            navController.navigate(
-                NavigationTree.Player.name,
-                NavOptions.Builder().setPopUpTo(NavigationTree.Player.name, true)
-                    .build()
-            )
+            val shouldNavigate = viewModel.handleClickedAlbumUri(albumUri)
+            if (shouldNavigate) {
+                navController.navigate(
+                    NavigationTree.Player.name,
+                    NavOptions.Builder().setPopUpTo(NavigationTree.Player.name, true)
+                        .build()
+                )
+            } else {
+                navController.navigateUp()
+            }
         }
     }
 

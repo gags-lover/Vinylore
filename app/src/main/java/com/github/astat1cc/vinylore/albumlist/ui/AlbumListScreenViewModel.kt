@@ -12,7 +12,6 @@ import com.github.astat1cc.vinylore.core.models.domain.FetchResult
 import com.github.astat1cc.vinylore.core.models.ui.ListingAlbumUi
 import com.github.astat1cc.vinylore.core.models.ui.UiState
 import com.github.astat1cc.vinylore.player.ui.service.MediaPlayerServiceConnection
-import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
@@ -35,12 +34,18 @@ class AlbumListScreenViewModel(
     private val _clickedAlbumUri = MutableStateFlow<Uri?>(null)
     val clickedAlbumUri: StateFlow<Uri?> = _clickedAlbumUri.asStateFlow()
 
+    val shouldNavigateToPlayer = serviceConnection.shouldRefreshMusicService
+
+    val currentPlayingAlbumUri: StateFlow<Uri?> = serviceConnection.playingAlbum.map { album ->
+        album?.uri
+    }.stateIn(viewModelScope, SharingStarted.Lazily, null)
+
     init {
         enableAlbumsScan()
         viewModelScope.launch {
             // default delay makes transition animation smoother, because UiState.Loading wouldn't
             // be changed to UiState.Success with probably huge list of items
-            val defaultDelay = launch { delay(SLIDE_IN_DURATION.toLong() + 20L) }
+            val defaultDelay = launch { delay(SLIDE_IN_DURATION.toLong() + 100L) }
             interactor.fetchAlbums().collect { fetchResult ->
                 defaultDelay.join()
                 _uiState.value = fetchResult.toUiState()
@@ -69,6 +74,9 @@ class AlbumListScreenViewModel(
     suspend fun handleClickedAlbumUri(clickedAlbumUri: Uri): Boolean =
         viewModelScope.async(dispatchers.io()) {
             if (serviceConnection.playingAlbum.value?.uri == clickedAlbumUri) return@async false
+
+            serviceConnection.clearCurrentPlayingTrack()
+
             interactor.saveChosenPlayingAlbum(clickedAlbumUri)
             _clickedAlbumUri.value = clickedAlbumUri
             delay(600L) // delay of album slideOut animation
@@ -80,8 +88,14 @@ class AlbumListScreenViewModel(
     }
 
     fun enableAlbumsScan() {
-        _uiState.value = UiState.Loading()
-        interactor.enableAlbumsScan()
+        viewModelScope.launch {
+            // Popup doesn't hide itself immediately, so user can see how
+            // 2 item popup turns into 1 item and then hiding. To escape that there should be delay
+            // to give popup time to hide itself
+            delay(40L)
+            _uiState.value = UiState.Loading()
+            interactor.enableAlbumsScan()
+        }
     }
 
     private fun FetchResult<List<AppListingAlbum>?>.toUiState(): UiState<List<ListingAlbumUi>?> =

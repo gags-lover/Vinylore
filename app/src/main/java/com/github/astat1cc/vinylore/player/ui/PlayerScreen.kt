@@ -61,10 +61,12 @@ fun PlayerScreen(
     val albumPreparedRecently = viewModel.albumPreparedRecently.collectAsState()
     val shouldRefreshScreen = viewModel.shouldRefreshScreen.collectAsState(initial = false)
 
-    var refreshCalled by remember { mutableStateOf(false) }
-    if (shouldRefreshScreen.value && !refreshCalled) {
+//    var refreshCalled by remember { mutableStateOf(false) }
+    Log.e("refresh", "${shouldRefreshScreen.value} vm: ${viewModel.hashCode()}")
+    if (shouldRefreshScreen.value) {
         Log.e("service", "${shouldRefreshScreen.value} vm: ${viewModel.hashCode()}")
-        refreshCalled = true // todo
+//        refreshCalled = true // todo
+        viewModel.refreshUsed()
         navController.navigate(NavigationTree.Player.name) {
 //            viewModel.refreshCalled()
             navController.popBackStack(
@@ -190,7 +192,7 @@ fun PlayerScreen(
                     changeVinylRotation = { newRotation ->
                         viewModel.changeDiscRotationFromAnimation(newRotation)
                     },
-                    playingTrack = currentPlayingTrack.value,
+                    playingTrack = if (localState is UiState.Loading) null else (currentPlayingTrack.value),
                     tonearmRotation = tonearmRotation.value,
                     tonearmAnimationState = tonearmAnimationState.value,
                     tonearmLifted = tonearmLifted.value,
@@ -212,7 +214,7 @@ fun PlayerScreen(
 //                    playingTrackName = currentPlayingTrack.value?.let { track ->
 //                        track.artist + " — " + track.title
 //                    } ?: "",
-                    track = currentPlayingTrack.value,
+                    playingTrack = if (localState is UiState.Loading) null else (currentPlayingTrack.value),
                     trackProgress = trackProgress.value,
                     sliderDraggingFinished = { viewModel.sliderDraggingFinished() },
                     sliderDragging = { newValue ->
@@ -229,6 +231,7 @@ fun PlayerScreen(
                     },
                     skipToPrevious = { viewModel.skipToPrevious() },
                     skipToNext = { viewModel.skipToNext() },
+                    vmHash = viewModel.hashCode().toString()
                 )
             }
         } else {
@@ -246,7 +249,7 @@ fun PlayerScreen(
                     changeVinylRotation = { newRotation ->
                         viewModel.changeDiscRotationFromAnimation(newRotation)
                     },
-                    playingTrack = currentPlayingTrack.value,
+                    playingTrack = if (localState is UiState.Loading) null else (currentPlayingTrack.value),
                     tonearmRotation = tonearmRotation.value,
                     tonearmAnimationState = tonearmAnimationState.value,
                     tonearmLifted = tonearmLifted.value,
@@ -283,7 +286,8 @@ fun PlayerScreen(
                     },
                     skipToPrevious = { viewModel.skipToPrevious() },
                     skipToNext = { viewModel.skipToNext() },
-                    track = currentPlayingTrack.value,
+                    playingTrack = if (localState is UiState.Loading) null else (currentPlayingTrack.value),
+                    vmHash = viewModel.hashCode().toString()
                 )
             }
         }

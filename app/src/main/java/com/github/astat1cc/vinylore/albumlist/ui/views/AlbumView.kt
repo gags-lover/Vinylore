@@ -5,6 +5,7 @@ import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.MaterialTheme
@@ -24,6 +25,8 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import com.github.astat1cc.vinylore.R
 import com.github.astat1cc.vinylore.core.models.ui.ListingAlbumUi
+import com.github.astat1cc.vinylore.core.theme.brownForGradient
+import com.github.astat1cc.vinylore.core.theme.darkBackground
 import com.github.astat1cc.vinylore.player.ui.views.dpToSp
 
 @Composable
@@ -31,12 +34,14 @@ fun AlbumView(
     album: ListingAlbumUi,
     onClick: (Uri) -> Unit,
     clickedAlbumUri: Uri?,
-    screenWidth: Int
+    screenWidth: Int,
+    isPlayingNow: Boolean
 ) {
-//    MaterialTheme {
+    // todo remove discs if isPplayingNow
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .background(color = if (isPlayingNow) brownForGradient else Color.Transparent)
             .clickable {
                 onClick(album.uri)
             }
@@ -55,38 +60,12 @@ fun AlbumView(
                     animationSpec = tween(
                         durationMillis = 250,
                         easing = LinearEasing,
-//                        delayMillis = 20
                     )
                 )
             ) {
                 Box(
                     contentAlignment = Alignment.CenterStart,
                 ) {
-//                        // second vinyl under mockup
-//                        Image(
-//                            painter = painterResource(R.drawable.vinyl_under_mockup),
-//                            contentDescription = "",
-//                            modifier = Modifier
-//                                .padding(start = 40.dp)
-//                                .height(100.dp),
-//                            contentScale = ContentScale.FillHeight,
-//                        )
-//                        // first vinyl under mockup
-//                        Image(
-//                            painter = painterResource(R.drawable.vinyl_under_mockup),
-//                            contentDescription = "",
-//                            modifier = Modifier
-//                                .padding(start = 32.dp)
-//                                .height(100.dp),
-//                            contentScale = ContentScale.FillHeight,
-//                        )
-//                        // mockup
-//                        Image(
-//                            painter = painterResource(R.drawable.album_mockup),
-//                            contentDescription = "",
-//                            modifier = Modifier.width(160.dp),
-//                            contentScale = ContentScale.FillWidth,
-//                        )
                     Image(
                         painter = painterResource(R.drawable.album_in_list),
                         contentDescription = null,
@@ -99,19 +78,10 @@ fun AlbumView(
                             .align(Alignment.Center)
                             .padding(end = 48.dp, start = 4.dp),
                         textAlign = TextAlign.Center,
-//                            fontWeight = FontWeight.Bold,
                         fontSize = dpToSp(dp = 16.dp),
                         fontWeight = FontWeight.Bold
                     )
                 }
-//            Image(
-//                painter = painterResource(R.drawable.album),
-//                contentDescription = "",
-//                modifier = Modifier
-//                    .width(180.dp)
-//                    .clipToBounds(),
-//                contentScale = ContentScale.FillWidth,
-//            )
             }
         }
         Text(
@@ -128,4 +98,3 @@ fun AlbumView(
         )
     }
 }
-//}

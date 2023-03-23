@@ -2,10 +2,13 @@ package com.github.astat1cc.vinylore.player.ui.service
 
 import android.app.PendingIntent
 import android.content.Context
+import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.drawable.Drawable
 import android.support.v4.media.session.MediaControllerCompat
 import android.support.v4.media.session.MediaSessionCompat
+import android.util.Log
+import androidx.core.app.NotificationCompat
 import com.bumptech.glide.Glide
 import com.bumptech.glide.request.target.CustomTarget
 import com.bumptech.glide.request.transition.Transition
@@ -27,16 +30,19 @@ class MusicNotificationManager(
         notificationManager =
             PlayerNotificationManager.Builder(context, NOTIFICATION_ID, CHANNEL_ID)
                 .setNotificationListener(notificationListener)
+                .setStopActionIconResourceId(R.drawable.ic_close)
+//                .setCustomActionReceiver(CustomActionReceiver())
                 .setMediaDescriptionAdapter(DescriptionAdapter(mediaController))
-                .setChannelNameResourceId(R.string.mock1) // todo remove mocks
+//                .setChannelNameResourceId(R.string.mock1) // todo remove mocks
                 .setChannelDescriptionResourceId(R.string.mock2)
                 .build().apply {
                     setMediaSessionToken(sessionToken)
-                    setSmallIcon(R.drawable.ic_music_note) // todo change icon
+                    setSmallIcon(R.drawable.ic_notification_vinyl_disc)
                     setUseRewindAction(false)
                     setUseFastForwardAction(false)
                     setUseNextActionInCompactView(true)
                     setUsePreviousActionInCompactView(true)
+                    setUseStopAction(true)
                 }
     }
 
@@ -90,3 +96,33 @@ class MusicNotificationManager(
         const val CHANNEL_ID = "1"
     }
 }
+
+//class CustomActionReceiver() : PlayerNotificationManager.CustomActionReceiver {
+//
+//    override fun createCustomActions(
+//        context: Context,
+//        instanceId: Int
+//    ): MutableMap<String, NotificationCompat.Action> {
+//        return mutableMapOf(
+//            "close" to NotificationCompat.Action(
+//                R.drawable.ic_music_note,
+//                "Close",
+////                null
+//                PendingIntent.getBroadcast(
+//                    context,
+//                    instanceId,
+//                    Intent("Close").setPackage(context.packageName),
+//                    PendingIntent.FLAG_CANCEL_CURRENT or PendingIntent.FLAG_IMMUTABLE
+//                )
+//            )
+//        )
+//    }
+//
+//    override fun getCustomActions(player: Player): MutableList<String> {
+//        return mutableListOf("close")
+//    }
+//
+//    override fun onCustomAction(player: Player, action: String, intent: Intent) {
+//        Log.e("action", "onCustomAction")
+//    }
+//}

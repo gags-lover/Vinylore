@@ -38,6 +38,8 @@ class TrackListScreenViewModel(
             }
         }.stateIn(viewModelScope, SharingStarted.Lazily, UiState.Loading())
 
+    val shouldNavigateToPlayer = serviceConnection.shouldRefreshMusicService
+
     private val isMusicPlaying: StateFlow<Boolean> = serviceConnection.isMusicPlaying
 
     private val customPlayerState: StateFlow<CustomPlayerState> =

@@ -17,7 +17,6 @@ import com.github.astat1cc.vinylore.player.ui.service.*
 import com.github.astat1cc.vinylore.player.ui.views.tonearm.TonearmState
 import com.github.astat1cc.vinylore.player.ui.views.vinyl.VinylDiscState
 import com.github.astat1cc.vinylore.core.models.ui.UiState
-import com.google.android.exoplayer2.C
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -36,6 +35,10 @@ class PlayerScreenViewModel(
     val uiState: StateFlow<UiState<PlayerScreenUiStateData>> =
         interactor.getAlbumFlow()
             .map { fetchResult ->
+                Log.e(
+                    "uistate",
+                    "collecting uiState - vm: ${this.hashCode()} state: ${(fetchResult?.toUiState() as? UiState.Success)?.data?.album?.name ?: UiState.Loading<PlayerScreenUiStateData>()}"
+                )
                 fetchResult?.toUiState() ?: UiState.Loading()
             }
             .stateIn(viewModelScope, SharingStarted.Lazily, UiState.Loading())
@@ -58,7 +61,12 @@ class PlayerScreenViewModel(
     private val _tonearmRotation = MutableStateFlow<Float>(0f)
     val tonearmRotation: StateFlow<Float> = _tonearmRotation.asStateFlow()
 
-    val shouldRefreshScreen = serviceConnection.shouldRefreshMusicService
+    private val _shouldRefreshScreen = MutableStateFlow(false)
+    val shouldRefreshScreen: StateFlow<Boolean> = _shouldRefreshScreen.asStateFlow()
+//        .map {
+//        Log.e("refresh", "$it vm: ${this.hashCode()} sc: ${serviceConnection.hashCode()} ")
+//        it
+//    }.shareIn(viewModelScope, SharingStarted.Lazily, replay = 1)
 
 // added to escape situations when asynchronous animatable changing rotation even after stop
 // (situation when navigating to another album)
@@ -76,11 +84,15 @@ class PlayerScreenViewModel(
             // this checking helps skip moments when user have chosen new album, it navigates to
             // PlayerScreen, but there's previous playing track emitted, and album cover on the
             // vinyl and track name change in user's eys, which is not appropriate.
-            if (uiState.value is UiState.Loading) {
-                null
-            } else {
-                track
-            }
+            Log.e(
+                "uistate",
+                "collection currentPlayingTrack - vm: ${this.hashCode()}, track ${track?.title}"
+            )
+//            if (uiState.value is UiState.Loading) {
+//                null
+//            } else {
+            track
+//            }
         }.stateIn(viewModelScope, SharingStarted.Lazily, null)
 
     private val isConnected: StateFlow<Boolean> =
@@ -111,6 +123,8 @@ class PlayerScreenViewModel(
     private val _currentTrackProgress = MutableStateFlow<Float>(0f)
     val currentTrackProgress: StateFlow<Float> = _currentTrackProgress.asStateFlow()
 
+    private val taskRemoved = MusicService.taskRemoved
+
     private var shouldStartConnectionTonearmRotationWithProgress = false
 
     private val subscriptionCallback = object : MediaBrowserCompat.SubscriptionCallback() {
@@ -131,18 +145,19 @@ class PlayerScreenViewModel(
     val albumPreparedRecently: StateFlow<Boolean?> = serviceConnection.albumPreparedRecently
 
     init {
-//        Log.e("service", this.hashCode().toString())
-        updatePlayback()
+        Log.e("metadata", serviceConnection.hashCode().toString())
+        launchPlaybackUpdating()
         with(viewModelScope) {
+            launch {
+                serviceConnection.shouldRefreshMusicService.collect { should ->
+                    _shouldRefreshScreen.value = should
+                }
+            }
             launch {
                 // delay to give time previous PlayerScreen's viewmodel to call onCleared() and
                 // emit IDLE to CustomPlayerState
                 delay(INITIAL_DELAY_FOR_PLAY_BUTTON_BLOCKING)
                 initialDelayForPlayButtonBlockingPassed = true
-            }
-            launch {
-                interactor.initializeAlbum()
-                startProgressConnection()
             }
             launch {
                 customPlayerState.collect { state ->
@@ -186,33 +201,43 @@ class PlayerScreenViewModel(
                     }
                 }
             }
-        }
-        viewModelScope.launch {
-            isConnected.collect { isConnected ->
-                if (isConnected) {
-                    rootMediaId = serviceConnection.rootMediaId
-                    serviceConnection.playbackState.value?.apply {
-                        _currentPlaybackPosition.value = position
+            launch {
+                isConnected.collect { isConnected ->
+                    if (isConnected) {
+                        rootMediaId = serviceConnection.rootMediaId
+                        serviceConnection.playbackState.value?.apply {
+                            _currentPlaybackPosition.value = position
+                        }
+                        serviceConnection.subscribe(rootMediaId, subscriptionCallback)
                     }
-                    serviceConnection.subscribe(rootMediaId, subscriptionCallback)
-                    Log.e("connection", "collected from isConnected")
                 }
             }
-        }
-        viewModelScope.launch {
-            uiState.collect { state ->
-                if (state !is UiState.Success) return@collect
-                var preparationCalled = false
-                while (!preparationCalled) {
-                    if (state.data.album != null &&
-                        isConnected.value
-                    ) {
-                        Log.e("connection", "preparation called from collecting uiState")
-                        serviceConnection.prepareMedia(state.data.album)
-                        preparationCalled = true
+            launch {
+                uiState.collect { uiState ->
+                    if (uiState !is UiState.Success) return@collect
+
+                    // should not call prepare if task was removed but service is still working
+                    // and should if app was just opened and it needs to call first preparing
+                    var shouldCallPrepare = !taskRemoved.value ||
+                            playbackState.value?.let { playbackState ->
+                                !playbackState.isPrepared
+                            } ?: true
+
+                    while (shouldCallPrepare) {
+                        if (uiState.data.album != null &&
+                            isConnected.value
+                        ) {
+                            serviceConnection.prepareMedia(uiState.data.album)
+                            shouldCallPrepare = false
+                            MusicService.taskRestored()
+                        }
+                        delay(1000L)
                     }
-                    delay(1000L)
                 }
+            }
+            launch {
+                interactor.initializeAlbum()
+                startProgressConnection()
             }
         }
     }
@@ -358,7 +383,7 @@ class PlayerScreenViewModel(
         updatePosition = true
     }
 
-    private fun updatePlayback() {
+    private fun launchPlaybackUpdating() {
         viewModelScope.launch {
             while (updatePositionLoopRequired) {
                 if (updatePosition) {
@@ -421,10 +446,8 @@ class PlayerScreenViewModel(
 //        appWasHidden = false
     }
 
-    private var appWasHidden = false
     fun composableIsInvisible() {
         shouldShowSmoothStartAndStopVinylAnimation.value = false
-        appWasHidden = true
     }
 
     fun changeDiscRotationFromAnimation(newRotation: Float) {
@@ -444,6 +467,10 @@ class PlayerScreenViewModel(
 
     fun vinylAppearanceAnimationShown() {
         serviceConnection.albumPreparedLongAgo()
+    }
+
+    fun refreshUsed() {
+        _shouldRefreshScreen.value = false
     }
 
     companion object {

@@ -11,7 +11,6 @@ import com.github.astat1cc.vinylore.core.models.domain.AppPlayingAlbum
 import com.github.astat1cc.vinylore.core.models.domain.AppAudioTrack
 import com.github.astat1cc.vinylore.core.models.domain.AppListingAlbum
 import com.github.astat1cc.vinylore.core.util.removeUnderscoresAndPathSegment
-import java.lang.NumberFormatException
 
 // todo make try here to avoid crashes
 
@@ -153,9 +152,23 @@ interface AppFileProvider {
                             mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_TITLE)
                         val artist =
                             mmr.extractMetadata((MediaMetadataRetriever.METADATA_KEY_ARTIST))
-                        val genre = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_GENRE)
-                        val year = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_YEAR)
-                            ?: mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DATE)
+                        val sampleRate =
+                            mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_SAMPLERATE)
+                                ?.let {
+                                    (it.toInt() / 1000f).toString()
+                                }
+                        val mediaFormat =
+                            mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_MIMETYPE)
+                                ?.let { type ->
+                                    when (type) {
+                                        "audio/flac" -> "FLAC"
+                                        "audio/mp4" -> "MP4"
+                                        "audio/mp3" -> "MP3"
+                                        "audio/mpeg" -> "MPEG"
+                                        else -> null
+                                    }
+                                }
+//                            ?: mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DATE)
                         val bitrate =
                             mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_BITRATE)
                                 ?.let {
@@ -170,8 +183,8 @@ interface AppFileProvider {
                             duration = duration,
                             albumCover = albumCover,
                             fileName = file.name ?: getDefaultName(),
-                            genre = genre,
-                            year = year,
+                            sampleRate = sampleRate,
+                            mediaFormat = mediaFormat,
                             bitrate = bitrate
                         )
                     } catch (e: Exception) {

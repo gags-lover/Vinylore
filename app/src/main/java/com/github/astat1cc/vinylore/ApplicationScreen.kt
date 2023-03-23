@@ -37,7 +37,9 @@ fun ApplicationScreen() {
     val navController = rememberAnimatedNavController()
 
     AnimatedNavHost(
-        modifier = Modifier.background(darkBackground).statusBarsPadding(),
+        modifier = Modifier
+            .background(darkBackground)
+            .statusBarsPadding(),
         navController = navController,
         startDestination = NavigationTree.Player.name
     ) {
@@ -130,6 +132,9 @@ fun ApplicationScreen() {
                     )
                 )
             },
+            exitTransition = {
+                fadeOut(targetAlpha = 1f)
+            }
 //            popEnterTransition = { fadeIn(initialAlpha = 1f) }
         ) {
             TrackListScreen(navController = navController)

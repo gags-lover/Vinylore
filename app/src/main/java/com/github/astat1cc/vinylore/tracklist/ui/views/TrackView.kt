@@ -37,7 +37,7 @@ fun TrackView(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 20.dp)
+                .padding(horizontal = 12.dp)
                 .clip(RoundedCornerShape(16.dp))
                 .customBackground(isCurrentlyPlaying)
                 .clickable {

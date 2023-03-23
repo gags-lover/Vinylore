@@ -7,6 +7,9 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment.Companion.Center
+import androidx.compose.ui.Alignment.Companion.CenterEnd
+import androidx.compose.ui.Alignment.Companion.CenterStart
 import androidx.compose.ui.Alignment.Companion.CenterVertically
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -18,6 +21,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.PopupProperties
 import com.github.astat1cc.vinylore.R
 import com.github.astat1cc.vinylore.core.theme.brown
 
@@ -25,11 +29,12 @@ import com.github.astat1cc.vinylore.core.theme.brown
 fun AlbumListHeader(
     refreshButtonListener: () -> Unit,
     backButtonListener: () -> Unit,
-    getDirLauncher: ManagedActivityResultLauncher<Uri?, Uri?>
+    getDirLauncher: ManagedActivityResultLauncher<Uri?, Uri?>,
+    showRefreshButton: Boolean
 ) {
     var showPopup by remember { mutableStateOf(false) }
 
-    Row(Modifier.fillMaxWidth(), verticalAlignment = CenterVertically) {
+    Box(Modifier.fillMaxWidth()) {
         // back button
         Icon(
             painter = painterResource(R.drawable.ic_arrow_back),
@@ -41,6 +46,7 @@ fun AlbumListHeader(
                 .clickable(onClick = {
                     backButtonListener()
                 })
+                .align(CenterStart)
                 .size(48.dp)
                 .padding(12.dp)
         )
@@ -51,27 +57,48 @@ fun AlbumListHeader(
             textAlign = TextAlign.Center,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier
-                .weight(1f)
-                .padding(8.dp),
+//                .weight(1f)
+                .padding(vertical = 8.dp, horizontal = 60.dp)
+                .fillMaxWidth()
+                .align(Center),
 //                .padding(horizontal = 60.dp),
             fontWeight = FontWeight.Bold
         )
 
-//        AnimatedVisibility(visible = showPopup) {
-        val dropdownMenuItems = listOf(
-            AppDropdownMenuItem(
-                text = stringResource(R.string.refresh),
-                onClick = { refreshButtonListener() },
-                iconRes = R.drawable.ic_refresh
-            ),
-            AppDropdownMenuItem(
-                text = stringResource(R.string.change_root),
-                onClick = { getDirLauncher.launch(null) },
-                iconRes = R.drawable.ic_change_root_folder
-            )
-        )
-        Box() {
-            // more button
+        val dropdownMenuItems =
+            if (showRefreshButton) {
+                listOf(
+                    AppDropdownMenuItem(
+                        text = stringResource(R.string.refresh),
+                        onClick = {
+                            showPopup = false
+                            refreshButtonListener()
+                        },
+                        iconRes = R.drawable.ic_refresh
+                    ),
+                    AppDropdownMenuItem(
+                        text = stringResource(R.string.change_root),
+                        onClick = {
+                            getDirLauncher.launch(null)
+                            showPopup = false
+                        },
+                        iconRes = R.drawable.ic_change_root_folder
+                    )
+                )
+            } else {
+                listOf(
+                    AppDropdownMenuItem(
+                        text = stringResource(R.string.change_root),
+                        onClick = {
+                            getDirLauncher.launch(null)
+                            showPopup = false
+                        },
+                        iconRes = R.drawable.ic_change_root_folder
+                    )
+                )
+            }
+        // more button
+        Box(modifier = Modifier.align(CenterEnd)) {
             Icon(
                 painter = painterResource(id = R.drawable.ic_more),
                 contentDescription = null,
@@ -83,6 +110,7 @@ fun AlbumListHeader(
                     .clickable {
                         showPopup = true
                     }
+
                     .padding(12.dp)
             )
             DropdownMenu(
@@ -118,48 +146,8 @@ fun AlbumListHeader(
                     }
                 }
             }
-//            Popup(
-//                alignment = TopEnd,
-//                onDismissRequest = { showPopup = false },
-//                properties = PopupProperties(focusable = true),
-////                offset = IntOffset(-20, 20)
-//            ) {
-//                Column(
-//                    Modifier
-//                        .clip(RoundedCornerShape(8.dp))
-//                        .background(Color.White)
-//                        .padding(8.dp),
-//                ) {
-//                    Icon(
-//                        painter = painterResource(id = R.drawable.ic_change_folder),
-//                        contentDescription = null,
-//                        tint = brown,
-//                        modifier = Modifier
-//                            .padding(4.dp)
-//                            .clip(CircleShape)
-//                            .size(48.dp)
-//                            .clickable {
-//                                getDirLauncher.launch(null)
-//                            }
-//                            .padding(12.dp)
-//                    )
-//                    Icon(
-//                        painter = painterResource(id = R.drawable.ic_refresh),
-//                        contentDescription = null,
-//                        tint = brown,
-//                        modifier = Modifier
-//                            .padding(4.dp)
-//                            .clip(CircleShape)
-//                            .size(48.dp)
-//                            .clickable {
-//                                refreshButtonListener()
-//                            }
-//                            .padding(12.dp)
-//                    )
-//                }
-//            }
         }
     }
 }
 
-data class AppDropdownMenuItem(val text: String, val onClick: () -> Unit, val iconRes: Int)
+private data class AppDropdownMenuItem(val text: String, val onClick: () -> Unit, val iconRes: Int)

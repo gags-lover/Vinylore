@@ -4,6 +4,12 @@ import android.content.Intent
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.ExperimentalAnimationApi
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -13,6 +19,7 @@ import androidx.compose.material.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -21,6 +28,7 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import androidx.navigation.NavOptions
 import com.github.astat1cc.vinylore.R
+import com.github.astat1cc.vinylore.SLIDE_IN_DURATION
 import com.github.astat1cc.vinylore.albumlist.ui.views.AlbumListHeader
 import com.github.astat1cc.vinylore.navigation.NavigationTree
 import com.github.astat1cc.vinylore.core.models.ui.UiState
@@ -35,6 +43,7 @@ import org.koin.androidx.compose.getViewModel
 // todo when u chose already chosen album don't stop playing
 // todo scrolling bar
 
+@OptIn(ExperimentalAnimationApi::class)
 @Composable
 fun AlbumListScreen(
     navController: NavHostController,
@@ -42,6 +51,16 @@ fun AlbumListScreen(
 ) {
     val uiState = viewModel.uiState.collectAsState()
     val clickedAlbumUri = viewModel.clickedAlbumUri.collectAsState()
+    val currentPlayingAlbumUri = viewModel.currentPlayingAlbumUri.collectAsState()
+    val shouldNavigateToPlayer = viewModel.shouldNavigateToPlayer.collectAsState(initial = false)
+
+    if (shouldNavigateToPlayer.value) {
+        navController.navigate(
+            NavigationTree.Player.name,
+            NavOptions.Builder().setPopUpTo(NavigationTree.Player.name, true)
+                .build()
+        )
+    }
 
     val configuration = LocalConfiguration.current
     val screenDensity = configuration.densityDpi / 160f
@@ -81,46 +100,33 @@ fun AlbumListScreen(
         }
     }
 
-    when (val localState = uiState.value) {
-        is UiState.Fail -> {
+    val localState = uiState.value
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(brown),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        // header
+        AlbumListHeader(
+            refreshButtonListener = { viewModel.enableAlbumsScan() },
+            backButtonListener = { navController.navigateUp() },
+            getDirLauncher = getDirLauncher,
+            showRefreshButton = localState !is UiState.Loading
+        )
+        // Success case: list of albums
+        androidx.compose.animation.AnimatedVisibility(
+            modifier = Modifier.clipToBounds(),
+            visible = localState is UiState.Success,
+            enter = slideInVertically(
+//                animationSpec = tween(easing = LinearEasing, durationMillis = SLIDE_IN_DURATION),
+                initialOffsetY = { it }
+            ),
+            exit = fadeOut() // doesn't get to it anyway
+        ) {
+            if (localState !is UiState.Success) return@AnimatedVisibility
             Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(brown),
-                contentAlignment = Alignment.Center
-            ) {
-                ChoseDirectoryButton(
-                    messageText = localState.message,
-                    buttonText = stringResource(R.string.try_again),
-                    getDirLauncher = getDirLauncher
-                )
-            }
-        }
-        is UiState.Loading -> {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(brown),
-                contentAlignment = Alignment.Center
-            ) {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        CircularProgressIndicator(color = vintagePaper)
-                        Text(
-                            modifier = Modifier.padding(top = 8.dp),
-                            text = stringResource(R.string.scanning_folders),
-                            color = vintagePaper,
-                            fontSize = 18.sp,
-                        )
-                    }
-                }
-            }
-        }
-        is UiState.Success -> {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(brown),
+                modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
             ) {
                 when {
@@ -138,39 +144,58 @@ fun AlbumListScreen(
                         )
                     }
                     else -> {
-                        Box(
-                            modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center
+                        LazyColumn(
+                            modifier = Modifier
+                                .fillMaxSize(),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            contentPadding = PaddingValues(top = 8.dp, bottom = 20.dp)
                         ) {
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                AlbumListHeader(
-                                    refreshButtonListener = { viewModel.enableAlbumsScan() },
-                                    backButtonListener = { navController.navigateUp() },
-                                    getDirLauncher = getDirLauncher
+                            viewModel.disableAlbumsScan()
+                            items(localState.data) { album ->
+                                AlbumView(
+                                    album,
+                                    onClick = { albumUri ->
+                                        onAlbumClick(albumUri)
+                                    },
+                                    clickedAlbumUri = clickedAlbumUri.value,
+                                    screenWidth = screenWidth.toInt(),
+                                    isPlayingNow = album.uri == currentPlayingAlbumUri.value
                                 )
-                                LazyColumn(
-                                    modifier = Modifier
-                                        .fillMaxSize(),
-                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                    contentPadding = PaddingValues(top = 8.dp, bottom = 20.dp)
-                                ) {
-                                    viewModel.disableAlbumsScan()
-                                    items(localState.data) { album ->
-                                        AlbumView(
-                                            album,
-                                            onClick = { albumUri ->
-                                                onAlbumClick(albumUri)
-                                            },
-                                            clickedAlbumUri = clickedAlbumUri.value,
-                                            screenWidth = screenWidth.toInt()
-                                        )
-                                    }
-                                }
                             }
                         }
                     }
                 }
             }
+        }
+
+        // fail view and loading
+        when (localState) {
+            is UiState.Fail -> {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    ChoseDirectoryButton(
+                        messageText = localState.message,
+                        buttonText = stringResource(R.string.try_again),
+                        getDirLauncher = getDirLauncher
+                    )
+                }
+            }
+            is UiState.Loading -> {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        CircularProgressIndicator(color = vintagePaper)
+                        Text(
+                            modifier = Modifier.padding(top = 8.dp),
+                            text = stringResource(R.string.scanning_folders),
+                            color = vintagePaper,
+                            fontSize = 18.sp,
+                        )
+                    }
+                }
+            }
+            else -> {}
         }
     }
 }

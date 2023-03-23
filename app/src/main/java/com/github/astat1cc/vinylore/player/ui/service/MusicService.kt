@@ -14,6 +14,7 @@ import android.widget.Toast
 import androidx.media.MediaBrowserServiceCompat
 import com.github.astat1cc.vinylore.Consts
 import com.github.astat1cc.vinylore.Consts.MY_MEDIA_ROOT_ID
+import com.github.astat1cc.vinylore.R
 import com.google.android.exoplayer2.ExoPlayer
 import com.google.android.exoplayer2.PlaybackException
 import com.google.android.exoplayer2.PlaybackParameters
@@ -22,6 +23,7 @@ import com.google.android.exoplayer2.ext.mediasession.MediaSessionConnector
 import com.google.android.exoplayer2.upstream.cache.CacheDataSource
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import org.koin.android.ext.android.inject
 
@@ -50,9 +52,17 @@ class MusicService : MediaBrowserServiceCompat() {
     var isForegroundService = false
 
     companion object {
+
         // todo do normal way
         private val _curSongDuration = MutableStateFlow(0L)
         val curSongDuration = _curSongDuration.asStateFlow()
+
+        private val _taskRemoved = MutableStateFlow(false)
+        val taskRemoved: StateFlow<Boolean> = _taskRemoved.asStateFlow()
+
+        fun taskRestored() {
+            _taskRemoved.value = false
+        }
 
         private const val TAG = "MusicService"
     }
@@ -121,10 +131,10 @@ class MusicService : MediaBrowserServiceCompat() {
 
     override fun onDestroy() {
         super.onDestroy()
+        Log.e("refresh","destroy")
 
         serviceScope.cancel()
         trackExoPlayer.release()
-        Log.e("service","destroy")
     }
 
     override fun onGetRoot(
@@ -268,14 +278,16 @@ class MusicService : MediaBrowserServiceCompat() {
     override fun onTaskRemoved(rootIntent: Intent?) {
         super.onTaskRemoved(rootIntent)
 
-        with(trackExoPlayer) {
-            stop()
-            clearMediaItems()
-        }
-        with(crackleExoPlayer) {
-            stop()
-            clearMediaItems()
-        }
+        _taskRemoved.value = true
+
+//        with(trackExoPlayer) {
+//            stop()
+//            clearMediaItems()
+//        }
+//        with(crackleExoPlayer) {
+//            stop()
+//            clearMediaItems()
+//        }
     }
 
     private inner class AudioMediaPlayBackPreparer : MediaSessionConnector.PlaybackPreparer {
@@ -373,7 +385,9 @@ class MusicService : MediaBrowserServiceCompat() {
                     Player.STATE_BUFFERING, Player.STATE_READY -> {
                         musicNotificationManager.showNotification(trackExoPlayer)
                     }
-                    else -> musicNotificationManager.hideNotification()
+                    else -> {
+                        musicNotificationManager.hideNotification()
+                    }
                 }
             }
 
@@ -381,16 +395,17 @@ class MusicService : MediaBrowserServiceCompat() {
                 super.onEvents(player, events)
 
                 tryEmitDuration(player.duration)
+//                Log.e("metadata","onEvents in MusicService ${player.currentMediaItem}")
+//                tryEmitCurrentPlayingTrack(player.currentMediaItem?.mediaId)
             }
 
             override fun onPlayerError(error: PlaybackException) {
-                throw error
                 var message = error.message
 //                var message = R.string.generic_error
 
-//                if (error.errorCode == PlaybackException.ERROR_CODE_IO_FILE_NOT_FOUND) {
-//                    message = R.string.error_media_not_found
-//                } todo
+                if (error.errorCode == PlaybackException.ERROR_CODE_IO_FILE_NOT_FOUND) {
+                    message = getString(R.string.error_media_not_found)
+                }
 
                 Toast.makeText(applicationContext, message, Toast.LENGTH_SHORT).show()
             }

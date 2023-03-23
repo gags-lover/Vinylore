@@ -162,6 +162,7 @@ class MediaPlayerServiceConnection(
         callback: MediaBrowserCompat.SubscriptionCallback
     ) {
         mediaBrowser.subscribe(parentId, callback)
+//        Log.e("metadata", mediaController.metadata.description.toString())
     }
 
     fun unsubscribe(
@@ -181,11 +182,17 @@ class MediaPlayerServiceConnection(
 
     private var refreshCalled = false
     private fun refreshService() {
+        Log.e("refresh", "called")
         if (refreshCalled) return
         refreshCalled = true
         connectionScope.launch {
             _shouldRefreshMusicService.emit(true)
+            Log.e("refresh", "emitted sc: ${this.hashCode()}")
         }
+    }
+
+    fun clearCurrentPlayingTrack() {
+        _currentPlayingTrack.value = null
     }
 
 //    fun refreshUsed() {
@@ -221,8 +228,8 @@ class MediaPlayerServiceConnection(
             super.onPlaybackStateChanged(state)
 
             _playbackState.value = state
+            Log.e("refresh", "state changed ${state?.state}")
             if (state?.state == PlaybackStateCompat.STATE_NONE) refreshService()
-            Log.e("service", state.toString())
         }
 
         override fun onMetadataChanged(metadata: MediaMetadataCompat?) {
@@ -233,6 +240,7 @@ class MediaPlayerServiceConnection(
                     track.uri == metadata.description.mediaUri
                 }
             }
+            Log.e("uistate", "onMetadataChanged ${metadata?.description?.title}")
             refreshCalled = false
         }
 

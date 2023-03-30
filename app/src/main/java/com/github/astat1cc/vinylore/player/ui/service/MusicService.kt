@@ -9,6 +9,7 @@ import android.support.v4.media.MediaBrowserCompat
 import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.MediaSessionCompat
 import android.support.v4.media.session.PlaybackStateCompat
+import android.util.Log
 import android.widget.Toast
 import androidx.media.MediaBrowserServiceCompat
 import com.github.astat1cc.vinylore.ServiceConsts
@@ -57,11 +58,11 @@ class MusicService : MediaBrowserServiceCompat() {
         private val _curSongDuration = MutableStateFlow(0L)
         val curSongDuration = _curSongDuration.asStateFlow()
 
-        private val _taskRemoved = MutableStateFlow(false)
-        val taskRemoved: StateFlow<Boolean> = _taskRemoved.asStateFlow()
+        private val _taskWasRemoved = MutableStateFlow(false)
+        val taskWasRemoved: StateFlow<Boolean> = _taskWasRemoved.asStateFlow()
 
         fun taskRestored() {
-            _taskRemoved.value = false
+            _taskWasRemoved.value = false
         }
 
         private const val TAG = "MusicService"
@@ -69,6 +70,8 @@ class MusicService : MediaBrowserServiceCompat() {
 
     override fun onCreate() {
         super.onCreate()
+
+        Log.e("meta", "oncreate")
 
         val sessionActivityIntent = packageManager
             ?.getLaunchIntentForPackage(packageName)
@@ -281,7 +284,7 @@ class MusicService : MediaBrowserServiceCompat() {
     override fun onTaskRemoved(rootIntent: Intent?) {
         super.onTaskRemoved(rootIntent)
 
-        _taskRemoved.value = true
+        _taskWasRemoved.value = true
 
 //        with(trackExoPlayer) {
 //            stop()

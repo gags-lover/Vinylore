@@ -2,6 +2,7 @@ package com.github.astat1cc.vinylore.player.ui
 
 import android.support.v4.media.MediaBrowserCompat
 import android.support.v4.media.session.PlaybackStateCompat
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.github.astat1cc.vinylore.ServiceConsts
@@ -118,12 +119,13 @@ class PlayerScreenViewModel(
         }.stateIn(viewModelScope, SharingStarted.Lazily, false)
 
     val sliderEnabled = customPlayerState.map { state ->
-        state != CustomPlayerState.CHANGING_TRACK &&
-                state != CustomPlayerState.SEEKING_TO_BEGINNING &&
-                tonearmRotation.value >= AppConst.VINYL_TRACK_START_TONEARM_ROTATION
+        !(state == CustomPlayerState.IDLE ||
+                state == CustomPlayerState.LAUNCHING ||
+                state == CustomPlayerState.CHANGING_TRACK ||
+                state == CustomPlayerState.SEEKING_TO_BEGINNING)
     }
 
-    private val taskRemoved = MusicService.taskRemoved
+    private val taskWasRemoved = MusicService.taskWasRemoved
 
     private var shouldStartSynchronizeTonearmRotationWithProgress = false
     private var trackIsChanging = false
@@ -251,10 +253,17 @@ class PlayerScreenViewModel(
 
                     // should not call prepare if task was removed but service is still working
                     // and should if app was just opened and it needs to call first preparing
-                    var shouldCallPrepare = !taskRemoved.value ||
-                            playbackState.value?.let { playbackState ->
-                                !playbackState.isPrepared
-                            } ?: true
+                    var shouldCallPrepare =
+                        !taskWasRemoved.value || // without "!" it means task was killed but service wasn't
+                                playbackState.value?.let { playbackState ->
+                                    // it means service was killed but task wasn't
+                                    !playbackState.isPrepared
+                                } ?: true
+                    Log.e(
+                        "meta",
+                        "collecting uiState ${uiState.data.album}, taskRemoved ${MusicService.taskWasRemoved.value}, vm: ${this@PlayerScreenViewModel.hashCode()}"
+                    )
+                    if (taskWasRemoved.value) MusicService.taskRestored()
 
                     while (shouldCallPrepare) {
                         if (uiState.data.album != null &&
@@ -262,7 +271,6 @@ class PlayerScreenViewModel(
                         ) {
                             serviceConnection.prepareMedia(uiState.data.album)
                             shouldCallPrepare = false
-                            MusicService.taskRestored()
                         }
                         delay(1000L)
                     }

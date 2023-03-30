@@ -1,11 +1,16 @@
 package com.github.astat1cc.vinylore.player.ui.views
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
+import androidx.compose.material.RangeSlider
 import androidx.compose.material.Slider
 import androidx.compose.material.SliderDefaults
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -140,11 +145,9 @@ fun TrackInfoAndControlView(
             value = trackProgress,
             onValueChangeFinished = sliderDraggingFinished,
             onValueChange = sliderDragging,
-
             //it means user have already launched player, so seeking should be available
             enabled = sliderEnabled,
 //            tonearmRotation >= AppConst.VINYL_TRACK_START_TONEARM_ROTATION,
-
             valueRange = 0f..100f,
             colors = SliderDefaults.colors(
                 thumbColor = Color.White,

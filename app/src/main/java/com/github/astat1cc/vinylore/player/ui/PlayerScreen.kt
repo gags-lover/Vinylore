@@ -211,6 +211,7 @@ fun PlayerScreen(
                 .weight(1f),
 //                    playingTrackName = currentPlayingTrack.value?.title ?: "",
             trackProgress = trackProgress.value,
+
             sliderDraggingFinished = { viewModel.sliderDraggingFinished() },
             sliderDragging = { newValue ->
                 viewModel.dragSlider(newValue)

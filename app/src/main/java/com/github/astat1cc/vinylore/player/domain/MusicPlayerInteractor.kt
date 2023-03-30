@@ -46,7 +46,6 @@ interface MusicPlayerInteractor {
             playingAlbum.asSharedFlow()
 
         override suspend fun initializeAlbum() {
-            Log.e("init", "init called")
             playingAlbum.emit(null)
             withContext(dispatchers.io()) {
                 try {

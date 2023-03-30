@@ -2,6 +2,7 @@ package com.github.astat1cc.vinylore.player.ui.service
 
 import android.app.Notification
 import android.content.Intent
+import android.util.Log
 import androidx.core.content.ContextCompat
 import com.google.android.exoplayer2.ui.PlayerNotificationManager
 
@@ -13,6 +14,7 @@ class MusicPlayerNotificationListener(
         super.onNotificationCancelled(notificationId, dismissedByUser)
 
         musicService.apply {
+            stopCrackle()
             stopForeground(true) // todo deprecated
             isForegroundService = false
             stopSelf() // todo isn't it duplicating?

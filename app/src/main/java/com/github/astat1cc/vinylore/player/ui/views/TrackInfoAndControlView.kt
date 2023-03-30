@@ -1,6 +1,5 @@
 package com.github.astat1cc.vinylore.player.ui.views
 
-import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.Slider
@@ -18,13 +17,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.github.astat1cc.vinylore.core.AppConst
 import com.github.astat1cc.vinylore.core.models.ui.AudioTrackUi
-import com.github.astat1cc.vinylore.core.models.ui.UiState
 import com.github.astat1cc.vinylore.core.theme.*
-import com.github.astat1cc.vinylore.player.ui.PlayerScreenViewModel
-import com.github.astat1cc.vinylore.player.ui.models.PlayerScreenUiStateData
 import com.github.astat1cc.vinylore.player.ui.views.vinyl.AudioControl
-import com.github.astat1cc.vinylore.player.ui.views.vinyl.VinylDiscState
 
 @Composable
 fun TrackInfoAndControlView(
@@ -34,17 +30,14 @@ fun TrackInfoAndControlView(
     sliderDraggingFinished: () -> Unit,
     sliderDragging: (Float) -> Unit,
     tonearmRotation: Float,
-    discAnimationState: VinylDiscState,
     togglePlayPause: () -> Unit,
     skipToPrevious: () -> Unit,
     skipToNext: () -> Unit,
     playingTrack: AudioTrackUi?,
-    vmHash:String
+    isPlaying: Boolean,
+    playPauseToggleBlocked: Boolean,
+    sliderEnabled: Boolean
 ) {
-    Log.e(
-        "uistate",
-        "inside composable - track " + playingTrack?.title.toString() + ", vm: " + vmHash
-    )
     Column(
         modifier = modifier
             .background(
@@ -149,21 +142,22 @@ fun TrackInfoAndControlView(
             onValueChange = sliderDragging,
 
             //it means user have already launched player, so seeking should be available
-            enabled = tonearmRotation >= PlayerScreenViewModel.VINYL_TRACK_START_TONEARM_ROTATION,
+            enabled = sliderEnabled,
+//            tonearmRotation >= AppConst.VINYL_TRACK_START_TONEARM_ROTATION,
 
             valueRange = 0f..100f,
             colors = SliderDefaults.colors(
                 thumbColor = Color.White,
                 activeTrackColor = Color.White,
-                inactiveTickColor = vintagePaper
             )
         )
         AudioControl(
             modifier = Modifier.weight(1f),
-            discState = discAnimationState,
+            isPlaying = isPlaying,
             clickTogglePlayPause = togglePlayPause,
             clickSkipPrevious = skipToPrevious,
-            clickSkipNext = skipToNext
+            clickSkipNext = skipToNext,
+            playPauseToggleBlocked = playPauseToggleBlocked
         )
     }
 }

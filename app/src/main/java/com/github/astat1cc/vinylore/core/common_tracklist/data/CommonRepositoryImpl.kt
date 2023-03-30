@@ -30,7 +30,6 @@ class CommonRepositoryImpl(
     override suspend fun fetchPlayingAlbum(refresh: Boolean): AppPlayingAlbum? =
         withContext(dispatchers.io()) {
             if (playingAlbumSnapshot == null || refresh) {
-                Log.e("fetching", "fetchPlayingAlbum with init in common repository")
                 initializePlayingAlbum()
                 playingAlbumSnapshot
             } else {

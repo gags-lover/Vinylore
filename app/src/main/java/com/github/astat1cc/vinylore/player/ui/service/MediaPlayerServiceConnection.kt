@@ -7,7 +7,8 @@ import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.MediaControllerCompat
 import android.support.v4.media.session.PlaybackStateCompat
 import android.util.Log
-import com.github.astat1cc.vinylore.Consts
+import com.github.astat1cc.vinylore.ServiceConsts
+import com.github.astat1cc.vinylore.core.AppConst
 import com.github.astat1cc.vinylore.core.models.ui.PlayingAlbumUi
 import com.github.astat1cc.vinylore.core.models.ui.AudioTrackUi
 import kotlinx.coroutines.*
@@ -34,8 +35,8 @@ class MediaPlayerServiceConnection(
     private val _playingAlbum = MutableStateFlow<PlayingAlbumUi?>(null)
     val playingAlbum: StateFlow<PlayingAlbumUi?> = _playingAlbum.asStateFlow()
 
-    private val _albumPreparedRecently = MutableStateFlow<Boolean?>(null)
-    val albumPreparedRecently: StateFlow<Boolean?> = _albumPreparedRecently.asStateFlow()
+    private val _trackIsJustPrepared = MutableStateFlow<Boolean?>(null)
+    val trackIsJustPrepared: StateFlow<Boolean?> = _trackIsJustPrepared.asStateFlow()
 
     private val _shouldRefreshMusicService = MutableSharedFlow<Boolean>(replay = 0)
     val shouldRefreshMusicService: SharedFlow<Boolean> = _shouldRefreshMusicService.asSharedFlow()
@@ -80,29 +81,33 @@ class MediaPlayerServiceConnection(
 
     fun slowPause() {
         if (_customPlayerState.value != CustomPlayerState.PLAYING) return
-        mediaBrowser.sendCustomAction(Consts.PAUSE_MEDIA_PLAY_ACTION, null, null)
+        mediaBrowser.sendCustomAction(ServiceConsts.SLOWLY_PAUSE_MEDIA_PLAY_ACTION, null, null)
         emitPlayerState(CustomPlayerState.PAUSED)
     }
 
     fun slowResume() {
         if (_customPlayerState.value != CustomPlayerState.PAUSED) return
-        mediaBrowser.sendCustomAction(Consts.RESUME_MEDIA_PLAY_ACTION, null, null)
+        mediaBrowser.sendCustomAction(ServiceConsts.SLOWLY_RESUME_MEDIA_PLAY_ACTION, null, null)
 //        emitPlayerState(CustomPlayerState.PLAYING)
     }
 
+    private var muteCalled = false
     fun muteVolume() {
-        mediaBrowser.sendCustomAction(Consts.MUTE, null, null)
+        if (muteCalled) return
+        mediaBrowser.sendCustomAction(ServiceConsts.MUTE, null, null)
+        muteCalled = true
     }
 
     fun unmuteVolume() {
-        mediaBrowser.sendCustomAction(Consts.UNMUTE, null, null)
+        mediaBrowser.sendCustomAction(ServiceConsts.UNMUTE, null, null)
+        muteCalled = false
     }
 
     fun prepareMedia(album: PlayingAlbumUi) {
         emitPlayerState(CustomPlayerState.IDLE)
         _playingAlbum.value = album
         mediaBrowser.sendCustomAction(
-            Consts.PREPARE_MEDIA_ACTION,
+            ServiceConsts.PREPARE_MEDIA_ACTION,
             null,
             null
         ) // todo if i need this?
@@ -111,11 +116,12 @@ class MediaPlayerServiceConnection(
             trackToPlay.uri.toString(),
             null
         )
-        _albumPreparedRecently.value = true
+        _trackIsJustPrepared.value = true
     }
 
     private fun emitPlayerState(newState: CustomPlayerState) {
         val oldState = _customPlayerState.value
+        if (blockChangingPlayerState) return
         if (oldState == newState ||
             (oldState == CustomPlayerState.IDLE && newState == CustomPlayerState.PAUSED)
         ) return
@@ -126,10 +132,10 @@ class MediaPlayerServiceConnection(
         emitPlayerState(CustomPlayerState.LAUNCHING)
         connectionScope.launch {
             delay(3200L)
-            mediaBrowser.sendCustomAction(Consts.START_CRACKLE_ACTION, null, null)
+            mediaBrowser.sendCustomAction(ServiceConsts.START_CRACKLE_ACTION, null, null)
             emitPlayerState(CustomPlayerState.PLAYING)
             delay(2500L)
-            mediaBrowser.sendCustomAction(Consts.START_TRACK_PLAYING_ACTION, null, null)
+            mediaBrowser.sendCustomAction(ServiceConsts.START_TRACK_PLAYING_ACTION, null, null)
         }
     }
 
@@ -145,12 +151,125 @@ class MediaPlayerServiceConnection(
         }
     }
 
-    fun skipToNext() {
-        transportControl.skipToNext()
+    //    private var trackWasChanged = false
+    private var blockChangingPlayerState = false
+    private var blockSkipping = false
+    private var skippingJob: Job? = null
+    fun skipToNext(): Job? {
+        if (blockSkipping) return null // stopping multiple clicks
+        blockSkipping = true
+        skippingJob?.cancel()
+//        skippingJob?.isCancelled
+        skippingJob = connectionScope.launch {
+            val stateBeforeChanging = _customPlayerState.value
+            emitPlayerState(CustomPlayerState.CHANGING_TRACK)
+            blockChangingPlayerState = true
+            mediaBrowser.sendCustomAction(ServiceConsts.PAUSE_MEDIA_PLAY_ACTION, null, null)
+            _trackIsJustPrepared.value = false // vinyl shrinks out
+            delay(AppConst.TONEARM_MOVING_FROM_DISC_TO_START_POSITION_DURATION + 50L)
+            transportControl.skipToNext()
+            delay(AppConst.DELAY_AFTER_SKIPPING_BEFORE_SHOWING_VINYL) // to give more time to call all the mediaChanged calls and improve performance
+            _trackIsJustPrepared.value = true // vinyl slides in
+            blockChangingPlayerState = false
+            if (stateBeforeChanging == CustomPlayerState.IDLE) {
+                emitPlayerState(stateBeforeChanging)
+                blockSkipping = false
+                return@launch
+            }
+            blockSkipping = false
+            delay(AppConst.SLIDE_IN_DURATION + 150L) // vinyl slides in + some additional delay
+            emitPlayerState(CustomPlayerState.STARTING_AFTER_CHANGING)
+            delay(100L)
+            mediaBrowser.sendCustomAction(ServiceConsts.START_CRACKLE_ACTION, null, null)
+            delay(AppConst.VINYL_STARTING_ANIMATION_DURATION + 500L) // vinyl starting and spins for 0.5 sec
+//        transportControl.play()
+            mediaBrowser.sendCustomAction(ServiceConsts.START_TRACK_PLAYING_ACTION, null, null)
+
+            emitPlayerState(CustomPlayerState.PLAYING)
+        }
+        return skippingJob
     }
 
-    fun skipToPrevious() {
-        transportControl.skipToPrevious()
+    fun skipToPrevious(currentTrackQueuePosition: Long): Job? {
+        if (blockSkipping) return null // stopping multiple clicks
+        blockSkipping = true
+        skippingJob?.cancel()
+//        skippingJob?.isCancelled
+        skippingJob = connectionScope.launch {
+            //if user skips when state is idle
+            if (_customPlayerState.value == CustomPlayerState.IDLE) {
+                emitPlayerState(CustomPlayerState.CHANGING_TRACK)
+                blockChangingPlayerState = true
+                _trackIsJustPrepared.value = false
+                delay(AppConst.TONEARM_MOVING_FROM_DISC_TO_START_POSITION_DURATION + 50L)
+                val itemQueuePositionToBePlayed =
+                    if (currentTrackQueuePosition != 0L) {
+                        currentTrackQueuePosition - 1
+                    } else {
+                        _playingAlbum.value?.let { album ->
+                            album.trackList.size - 1L
+                        } ?: return@launch
+                    }
+                skipToQueueItem(itemQueuePositionToBePlayed)
+                delay(AppConst.DELAY_AFTER_SKIPPING_BEFORE_SHOWING_VINYL) // to give more time to call all the mediaChanged calls and improve performance
+                _trackIsJustPrepared.value = true
+                blockChangingPlayerState = false
+                emitPlayerState(CustomPlayerState.IDLE)
+                blockSkipping = false
+                return@launch
+            }
+            // if item is the first at queue
+            if (currentTrackQueuePosition == 0L) {
+                emitPlayerState(CustomPlayerState.SEEKING_TO_BEGINNING)
+                blockChangingPlayerState = true
+                delay(AppConst.TONEARM_MOVING_FROM_DISC_TO_START_POSITION_DURATION + 50L)
+                blockChangingPlayerState = false
+                emitPlayerState(CustomPlayerState.PLAYING)
+                transportControl.seekTo(0L)
+                blockSkipping = false
+                return@launch
+            }
+
+            // If position is above 3 seconds skipToPrevious only rewinds current track. So 2100 + 900
+            // delay equals that exact duration
+            val itemActuallyShouldBeChanged =
+                _playbackState.value?.let { it.position < 2100 } ?: false
+
+            if (itemActuallyShouldBeChanged) {
+                emitPlayerState(CustomPlayerState.CHANGING_TRACK)
+                blockChangingPlayerState = true
+                mediaBrowser.sendCustomAction(ServiceConsts.PAUSE_MEDIA_PLAY_ACTION, null, null)
+                _trackIsJustPrepared.value = false
+                delay(AppConst.TONEARM_MOVING_FROM_DISC_TO_START_POSITION_DURATION + 50L)
+                skipToQueueItem(currentTrackQueuePosition - 1)
+                delay(AppConst.DELAY_AFTER_SKIPPING_BEFORE_SHOWING_VINYL) // to give more time to call all the mediaChanged calls and improve performance
+                _trackIsJustPrepared.value = true
+                blockChangingPlayerState = false
+                blockSkipping = false
+                delay(AppConst.SLIDE_IN_DURATION + 150L) // vinyl slides in + some additional delay
+                emitPlayerState(CustomPlayerState.STARTING_AFTER_CHANGING)
+                delay(100L)
+                mediaBrowser.sendCustomAction(ServiceConsts.START_CRACKLE_ACTION, null, null)
+                delay(AppConst.VINYL_STARTING_ANIMATION_DURATION + 500L) // vinyl starting and spins for 0.5 sec
+                mediaBrowser.sendCustomAction(ServiceConsts.START_TRACK_PLAYING_ACTION, null, null)
+                emitPlayerState(CustomPlayerState.PLAYING)
+            } else {
+                emitPlayerState(CustomPlayerState.SEEKING_TO_BEGINNING)
+                blockChangingPlayerState = true
+                delay(AppConst.TONEARM_MOVING_FROM_DISC_TO_START_POSITION_DURATION + 100L)
+                blockChangingPlayerState = false
+                blockSkipping = false
+                transportControl.seekTo(0L)
+                emitPlayerState(CustomPlayerState.PLAYING)
+            }
+        }
+        return skippingJob
+    }
+
+    fun diskIsShown() {
+//        if (!trackWasChanged) return
+//        trackWasChanged = false
+//        transportControl.play()
     }
 
     fun skipToQueueItem(id: Long) {
@@ -173,26 +292,24 @@ class MediaPlayerServiceConnection(
     }
 
     fun refreshMediaBrowserChildren() {
-        mediaBrowser.sendCustomAction(Consts.REFRESH_MEDIA_PLAY_ACTION, null, null)
-    }
-
-    fun albumPreparedLongAgo() {
-        _albumPreparedRecently.value = false
+        mediaBrowser.sendCustomAction(ServiceConsts.REFRESH_MEDIA_PLAY_ACTION, null, null)
     }
 
     private var refreshCalled = false
     private fun refreshService() {
-        Log.e("refresh", "called")
         if (refreshCalled) return
         refreshCalled = true
         connectionScope.launch {
             _shouldRefreshMusicService.emit(true)
-            Log.e("refresh", "emitted sc: ${this.hashCode()}")
         }
     }
 
     fun clearCurrentPlayingTrack() {
         _currentPlayingTrack.value = null
+    }
+
+    fun play() {
+        transportControl.play()
     }
 
 //    fun refreshUsed() {
@@ -228,7 +345,6 @@ class MediaPlayerServiceConnection(
             super.onPlaybackStateChanged(state)
 
             _playbackState.value = state
-            Log.e("refresh", "state changed ${state?.state}")
             if (state?.state == PlaybackStateCompat.STATE_NONE) refreshService()
         }
 
@@ -240,7 +356,6 @@ class MediaPlayerServiceConnection(
                     track.uri == metadata.description.mediaUri
                 }
             }
-            Log.e("uistate", "onMetadataChanged ${metadata?.description?.title}")
             refreshCalled = false
         }
 

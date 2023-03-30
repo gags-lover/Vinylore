@@ -1,5 +1,6 @@
 package com.github.astat1cc.vinylore.player.ui.views.tonearm
 
+import android.util.Log
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
@@ -11,28 +12,30 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.Dp
 import com.github.astat1cc.vinylore.R
-import com.github.astat1cc.vinylore.player.ui.PlayerScreenViewModel
+import com.github.astat1cc.vinylore.core.AppConst
 import kotlinx.coroutines.delay
 
 @Composable
 fun TonearmAnimated(
     modifier: Modifier = Modifier,
     currentRotation: Float = 0f,
-    tonearmState: TonearmState = TonearmState.ON_START_POSITION,
+    tonearmState: TonearmState = TonearmState.IDLE_POSITION,
     tonearmTransition: (TonearmState) -> Unit,
     changeRotation: (Float) -> Unit,
     tonearmLifted: Boolean,
     vinylSize: Dp
 ) {
 
-    val rotation = remember { Animatable(currentRotation) }
+    // using normal rotation * 100 because it has measurement error
+    val rotationAnimatable = remember { Animatable(currentRotation) }
 
     LaunchedEffect(tonearmState) {
+        rotationAnimatable.snapTo(currentRotation)
         when (tonearmState) {
-            TonearmState.MOVING_TO_START_POSITION -> {
+            TonearmState.MOVING_FROM_IDLE_TO_START_POSITION -> {
                 delay(1500L)
-                rotation.animateTo(
-                    targetValue = PlayerScreenViewModel.VINYL_TRACK_START_TONEARM_ROTATION,
+                rotationAnimatable.animateTo(
+                    targetValue = AppConst.VINYL_TRACK_START_TONEARM_ROTATION,
                     animationSpec = tween(
                         durationMillis = 1350,
                         easing = LinearEasing
@@ -42,8 +45,8 @@ fun TonearmAnimated(
                     if (value == targetValue) tonearmTransition(tonearmState)
                 }
             }
-            TonearmState.MOVING_TO_IDLE_POSITION -> {
-                rotation.animateTo(
+            TonearmState.MOVING_FROM_DISC_TO_IDLE_POSITION -> {
+                rotationAnimatable.animateTo(
                     targetValue = 0f,
                     animationSpec = tween(
                         durationMillis = 1333,
@@ -55,13 +58,24 @@ fun TonearmAnimated(
                 }
             }
             TonearmState.MOVING_ABOVE_DISC -> {
-                rotation.snapTo(currentRotation)
+                rotationAnimatable.snapTo(currentRotation)
             }
-            TonearmState.ON_START_POSITION -> {
-                rotation.snapTo(currentRotation)
+            TonearmState.IDLE_POSITION -> {
+                rotationAnimatable.snapTo(currentRotation)
             }
             TonearmState.STAYING_ON_DISC -> {
-                rotation.snapTo(currentRotation)
+                rotationAnimatable.snapTo(currentRotation)
+            }
+            TonearmState.MOVING_FROM_DISC_TO_START_POSITION -> {
+                rotationAnimatable.animateTo(
+                    targetValue = AppConst.VINYL_TRACK_START_TONEARM_ROTATION,
+                    animationSpec = tween(
+                        durationMillis = AppConst.TONEARM_MOVING_FROM_DISC_TO_START_POSITION_DURATION,
+                        easing = LinearEasing
+                    )
+                ) {
+                    changeRotation(value)
+                }
             }
         }
     }

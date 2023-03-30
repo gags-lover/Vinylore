@@ -4,6 +4,7 @@ import android.graphics.Bitmap
 import androidx.compose.animation.core.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import com.github.astat1cc.vinylore.core.AppConst
 
 @Composable
 fun VinylAnimated(
@@ -47,7 +48,10 @@ fun VinylAnimated(
             VinylDiscState.STARTING -> {
                 rotationAnimatable.animateTo(
                     targetValue = currentRotation + 180f,
-                    animationSpec = tween(durationMillis = 1000, easing = FastOutLinearInEasing)
+                    animationSpec = tween(
+                        durationMillis = AppConst.VINYL_STARTING_ANIMATION_DURATION,
+                        easing = FastOutLinearInEasing
+                    )
                 ) {
                     changeRotation(value)
                     if (value > targetValue - 15f) playerStateTransitionFrom(discState)

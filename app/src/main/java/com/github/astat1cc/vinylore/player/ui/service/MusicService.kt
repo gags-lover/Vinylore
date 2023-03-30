@@ -9,11 +9,10 @@ import android.support.v4.media.MediaBrowserCompat
 import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.MediaSessionCompat
 import android.support.v4.media.session.PlaybackStateCompat
-import android.util.Log
 import android.widget.Toast
 import androidx.media.MediaBrowserServiceCompat
-import com.github.astat1cc.vinylore.Consts
-import com.github.astat1cc.vinylore.Consts.MY_MEDIA_ROOT_ID
+import com.github.astat1cc.vinylore.ServiceConsts
+import com.github.astat1cc.vinylore.ServiceConsts.MY_MEDIA_ROOT_ID
 import com.github.astat1cc.vinylore.R
 import com.google.android.exoplayer2.ExoPlayer
 import com.google.android.exoplayer2.PlaybackException
@@ -30,6 +29,7 @@ import org.koin.android.ext.android.inject
 // todo when service is killed, app is not i need to launch service again
 
 private const val CRACKLE_STANDARD_VOLUME = 0.75f
+private const val TRACK_STANDARD_VOLUME = 1f
 
 class MusicService : MediaBrowserServiceCompat() {
 
@@ -129,9 +129,14 @@ class MusicService : MediaBrowserServiceCompat() {
         sync = false
     }
 
+    fun stopCrackle() {
+//        stopPlayerSync()
+        trackExoPlayer.playWhenReady = false
+        crackleExoPlayer.playWhenReady = false
+    }
+
     override fun onDestroy() {
         super.onDestroy()
-        Log.e("refresh","destroy")
 
         serviceScope.cancel()
         trackExoPlayer.release()
@@ -168,32 +173,26 @@ class MusicService : MediaBrowserServiceCompat() {
 
     override fun onCustomAction(action: String, extras: Bundle?, result: Result<Bundle>) {
         super.onCustomAction(action, extras, result)
-
         when (action) {
-            Consts.START_CRACKLE_ACTION -> startCrackle()
-            Consts.START_TRACK_PLAYING_ACTION -> startTrackPlaying()
-            Consts.RESUME_MEDIA_PLAY_ACTION -> slowlyResume()
-            Consts.PAUSE_MEDIA_PLAY_ACTION -> slowlyPause()
-            Consts.PREPARE_MEDIA_ACTION -> musicNotificationManager.showNotification(trackExoPlayer)
-            Consts.REFRESH_MEDIA_PLAY_ACTION -> {
+            ServiceConsts.START_CRACKLE_ACTION -> startCrackle()
+            ServiceConsts.START_TRACK_PLAYING_ACTION -> startTrackPlaying()
+            ServiceConsts.SLOWLY_RESUME_MEDIA_PLAY_ACTION -> slowlyResume()
+            ServiceConsts.SLOWLY_PAUSE_MEDIA_PLAY_ACTION -> slowlyPause()
+            ServiceConsts.PREPARE_MEDIA_ACTION -> musicNotificationManager.showNotification(
+                trackExoPlayer
+            )
+            ServiceConsts.REFRESH_MEDIA_PLAY_ACTION -> {
                 mediaSource.refresh()
                 notifyChildrenChanged(MY_MEDIA_ROOT_ID)
             }
-            Consts.MUTE -> mute()
-            Consts.UNMUTE -> unmute()
+            ServiceConsts.MUTE -> mute()
+            ServiceConsts.UNMUTE -> unmute()
+            ServiceConsts.PAUSE_MEDIA_PLAY_ACTION -> pause()
             else -> Unit
         }
     }
 
-    private var savedTrackVolume = 0f
-    private var savedCrackleVolume = 0f
-    private var volumesAreAlreadySaved = false
     private fun mute() {
-        if (!volumesAreAlreadySaved) {
-            savedTrackVolume = trackExoPlayer.volume
-            savedCrackleVolume = crackleExoPlayer.volume
-            volumesAreAlreadySaved = true
-        }
         trackExoPlayer.volume = 0f
         crackleExoPlayer.volume = 0f
     }
@@ -203,10 +202,8 @@ class MusicService : MediaBrowserServiceCompat() {
             // delay to escape cases where seeking is not completed and user hears prev position
             // sound for some time
             delay(50L)
-
-            trackExoPlayer.volume = savedTrackVolume
-            crackleExoPlayer.volume = savedCrackleVolume
-            volumesAreAlreadySaved = false
+            trackExoPlayer.volume = TRACK_STANDARD_VOLUME
+            crackleExoPlayer.volume = CRACKLE_STANDARD_VOLUME
         }
     }
 
@@ -242,7 +239,7 @@ class MusicService : MediaBrowserServiceCompat() {
 
             // because it seems that app saves params even after closing app
             trackExoPlayer.playbackParameters = PlaybackParameters(1f, 1f)
-            trackExoPlayer.volume = 1f
+            trackExoPlayer.volume = TRACK_STANDARD_VOLUME
             crackleExoPlayer.volume = CRACKLE_STANDARD_VOLUME
         }
     }
@@ -270,9 +267,15 @@ class MusicService : MediaBrowserServiceCompat() {
                 delay(100L)
             }
             trackExoPlayer.playbackParameters = PlaybackParameters(1f, 1f)
-            trackExoPlayer.volume = 1f
+            trackExoPlayer.volume = TRACK_STANDARD_VOLUME
             crackleExoPlayer.volume = CRACKLE_STANDARD_VOLUME
         }
+    }
+
+    private fun pause() {
+        crackleExoPlayer.playWhenReady = false
+        trackExoPlayer.playWhenReady = false
+        startPlayersSync()
     }
 
     override fun onTaskRemoved(rootIntent: Intent?) {
@@ -356,7 +359,7 @@ class MusicService : MediaBrowserServiceCompat() {
                         repeatMode = Player.REPEAT_MODE_ALL
                         prepare()
                         this.playWhenReady = false
-
+                        volume = TRACK_STANDARD_VOLUME
                     }
                 }
                 launch {

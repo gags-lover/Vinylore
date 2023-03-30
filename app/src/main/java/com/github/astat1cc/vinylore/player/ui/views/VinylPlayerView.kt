@@ -1,8 +1,8 @@
 package com.github.astat1cc.vinylore.player.ui.views
 
 import android.util.Log
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.*
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -18,8 +18,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import com.github.astat1cc.vinylore.R
+import com.github.astat1cc.vinylore.core.AppConst
 import com.github.astat1cc.vinylore.core.models.ui.AudioTrackUi
 import com.github.astat1cc.vinylore.core.theme.brownForGradient
 import com.github.astat1cc.vinylore.core.theme.darkBackground
@@ -52,27 +55,35 @@ fun VinylPlayerView(
     // shows animation any time this variable is changed, so if we shouldn't show animation
     // (if param is false or null) we need to emit this variable to true initially, so animation wouldn't
     // appear.
-    var vinylIsVisible by remember {
-        mutableStateOf(
-            shouldShowVinylAppearanceAnimation != null && !shouldShowVinylAppearanceAnimation
+//    var vinylIsVisible by remember {
+//        mutableStateOf(
+//            shouldShowVinylAppearanceAnimation != null && !shouldShowVinylAppearanceAnimation
 //            false
-        )
-    }
+//        )
+//    }
 //    Log.e(
 //        "appearance",
 //        "shouldShowAppearance $shouldShowVinylAppearanceAnimation, vinyl is Visible $vinylIsVisible"
 //    )
 
     LaunchedEffect(shouldShowVinylAppearanceAnimation) {
-        if (shouldShowVinylAppearanceAnimation != true) return@LaunchedEffect
-        delay(400L)
-        vinylIsVisible = true
-        vinylAppearanceAnimationShown()
-//        Log.e(
-//            "appearance",
-//            "completion of launched effect"
-//        )
+        if (shouldShowVinylAppearanceAnimation == true) {
+            delay(AppConst.SLIDE_IN_DURATION.toLong())
+            vinylAppearanceAnimationShown()
+        }
     }
+//    LaunchedEffect(shouldShowVinylAppearanceAnimation) {
+//        if (shouldShowVinylAppearanceAnimation == true) {
+//            Log.e("appear", "before delay")
+//            delay(1000L)
+//            vinylIsVisible = true
+//            Log.e("appear", "before shown call")
+//            vinylAppearanceAnimationShown()
+//        } else {
+//            Log.e("appear", "before emitting false call")
+//            vinylIsVisible = false
+//        }
+//    }
 
     val modifierConsideringOrientation =
         if (orientationPortrait) modifier.fillMaxWidth() else modifier
@@ -148,8 +159,22 @@ fun VinylPlayerView(
                     .align(Alignment.CenterStart),
             )
             AnimatedVisibility(
-                visible = playingTrack != null && vinylIsVisible,
-                enter = slideInHorizontally(initialOffsetX = { it })
+                visible = playingTrack != null && shouldShowVinylAppearanceAnimation == true,
+                enter = slideInVertically(
+                    initialOffsetY = { -it * 3 / 2 },
+                    animationSpec = tween(
+                        easing = LinearOutSlowInEasing,
+                        durationMillis = AppConst.SLIDE_IN_DURATION
+                    )
+                ),
+                exit = shrinkOut(
+//                    targetOffsetX = { -it * 3 / 2 },
+                    animationSpec = tween(
+                        easing = FastOutLinearInEasing,
+                        durationMillis = AppConst.VINYL_VISIBILITY_SHRINK_OUT_DURATION
+                    ),
+                    clip = false
+                )
             ) {
                 VinylAnimated(
                     modifier = Modifier

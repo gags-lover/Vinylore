@@ -33,7 +33,7 @@ class MusicNotificationManager(
                 .setStopActionIconResourceId(R.drawable.ic_close)
 //                .setCustomActionReceiver(CustomActionReceiver())
                 .setMediaDescriptionAdapter(DescriptionAdapter(mediaController))
-//                .setChannelNameResourceId(R.string.mock1) // todo remove mocks
+                .setChannelNameResourceId(R.string.mock1) // todo remove mocks
                 .setChannelDescriptionResourceId(R.string.mock2)
                 .build().apply {
                     setMediaSessionToken(sessionToken)

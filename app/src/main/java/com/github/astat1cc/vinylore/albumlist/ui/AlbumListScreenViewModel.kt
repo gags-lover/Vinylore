@@ -3,8 +3,8 @@ package com.github.astat1cc.vinylore.albumlist.ui
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.github.astat1cc.vinylore.SLIDE_IN_DURATION
 import com.github.astat1cc.vinylore.albumlist.domain.AlbumListScreenInteractor
+import com.github.astat1cc.vinylore.core.AppConst
 import com.github.astat1cc.vinylore.core.AppErrorHandler
 import com.github.astat1cc.vinylore.core.DispatchersProvider
 import com.github.astat1cc.vinylore.core.models.domain.AppListingAlbum
@@ -45,7 +45,7 @@ class AlbumListScreenViewModel(
         viewModelScope.launch {
             // default delay makes transition animation smoother, because UiState.Loading wouldn't
             // be changed to UiState.Success with probably huge list of items
-            val defaultDelay = launch { delay(SLIDE_IN_DURATION.toLong() + 100L) }
+            val defaultDelay = launch { delay(AppConst.SLIDE_IN_DURATION.toLong() + 100L) }
             interactor.fetchAlbums().collect { fetchResult ->
                 defaultDelay.join()
                 _uiState.value = fetchResult.toUiState()

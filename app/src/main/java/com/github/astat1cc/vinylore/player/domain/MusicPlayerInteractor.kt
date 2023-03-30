@@ -40,10 +40,9 @@ interface MusicPlayerInteractor {
 
         // we need the same instance for viewmodel and service, so we're holding our album
         // in a variable instead of creating and returning new flow every time the function called
-        private val playingAlbum = MutableSharedFlow<FetchResult<AppPlayingAlbum?>?>(replay = 0)
+        private val playingAlbum = MutableSharedFlow<FetchResult<AppPlayingAlbum?>?>(replay = 1)
 
         override fun getAlbumFlow(): SharedFlow<FetchResult<AppPlayingAlbum?>?> {
-            Log.e("meta", "getAlbumFlow interactor: ${this.hashCode()}")
             return playingAlbum.asSharedFlow()
         }
 

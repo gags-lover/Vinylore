@@ -147,7 +147,17 @@ class PlayerScreenViewModel(
 
     val trackIsJustPrepared: StateFlow<Boolean?> = serviceConnection.trackIsJustPrepared
 
+    // should not call prepare if task was removed but service is still working
+    // and should if app was just opened and it needs to call first preparing
+    private val shouldCallPrepare =
+        !taskWasRemoved.value || // without "!" it means task was killed but service wasn't
+                playbackState.value?.let { playbackState ->
+                    // it means service was killed but task wasn't
+                    !playbackState.isPrepared
+                } ?: true
+
     init {
+        Log.e("meta","init vm: ${this.hashCode()}, should $shouldCallPrepare")
         launchPlaybackUpdating()
         with(viewModelScope) {
             launch {
@@ -251,33 +261,26 @@ class PlayerScreenViewModel(
                 uiState.collect { uiState ->
                     if (uiState !is UiState.Success) return@collect
 
-                    // should not call prepare if task was removed but service is still working
-                    // and should if app was just opened and it needs to call first preparing
-                    var shouldCallPrepare =
-                        !taskWasRemoved.value || // without "!" it means task was killed but service wasn't
-                                playbackState.value?.let { playbackState ->
-                                    // it means service was killed but task wasn't
-                                    !playbackState.isPrepared
-                                } ?: true
-                    Log.e(
-                        "meta",
-                        "collecting uiState ${uiState.data.album}, taskRemoved ${MusicService.taskWasRemoved.value}, vm: ${this@PlayerScreenViewModel.hashCode()}"
-                    )
-                    if (taskWasRemoved.value) MusicService.taskRestored()
-
-                    while (shouldCallPrepare) {
+//                    Log.e(
+//                        "meta",
+//                        "collecting uiState ${uiState.data.album}, taskRemoved ${MusicService.taskWasRemoved.value}, vm: ${this@PlayerScreenViewModel.hashCode()}"
+//                    )
+                    if (!shouldCallPrepare) return@collect
+                    var prepareCalled = false
+                    while (!prepareCalled) {
                         if (uiState.data.album != null &&
                             isConnected.value
                         ) {
                             serviceConnection.prepareMedia(uiState.data.album)
-                            shouldCallPrepare = false
+                            prepareCalled = true
                         }
                         delay(1000L)
                     }
                 }
             }
             launch {
-                interactor.initializeAlbum()
+                if (shouldCallPrepare) interactor.initializeAlbum()
+                if (taskWasRemoved.value) MusicService.taskRestored()
                 startUsualProgressSync()
             }
         }

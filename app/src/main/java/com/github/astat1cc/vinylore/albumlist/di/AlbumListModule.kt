@@ -1,7 +1,11 @@
 package com.github.astat1cc.vinylore.albumlist.di
 
 import android.content.Context
+import androidx.room.Room
 import com.github.astat1cc.vinylore.albumlist.data.AlbumListScreenRepositoryImpl
+import com.github.astat1cc.vinylore.albumlist.data.database.AlbumsDatabase
+import com.github.astat1cc.vinylore.albumlist.data.database.dao.ListingAlbumDao
+import com.github.astat1cc.vinylore.albumlist.data.database.model.ListingAlbumDb
 import com.github.astat1cc.vinylore.albumlist.domain.AlbumListScreenInteractor
 import com.github.astat1cc.vinylore.albumlist.domain.AlbumListScreenRepository
 import com.github.astat1cc.vinylore.albumlist.ui.AlbumListScreenViewModel
@@ -40,13 +44,24 @@ val albumListModule = module {
     single<DispatchersProvider> {
         DispatchersProvider.Impl()
     }
+    single<AlbumsDatabase> {
+        Room.databaseBuilder(
+            androidContext(),
+            AlbumsDatabase::class.java,
+            AlbumsDatabase.DATABASE_NAME
+        ).build()
+    }
     single<AlbumListScreenRepository> {
-        AlbumListScreenRepositoryImpl(sharedPrefs = get())
+        AlbumListScreenRepositoryImpl(
+            sharedPrefs = get(),
+            dispatchers = get(),
+            fileProvider = get(),
+            albumsDao = provideAlbumsDao(database = get())
+        )
     }
     single<AlbumListScreenInteractor> {
         AlbumListScreenInteractor.Impl(
             dispatchers = get(),
-            commonRepository = get(),
             albumListScreenRepository = get(),
             errorHandler = get()
         )
@@ -60,3 +75,5 @@ val albumListModule = module {
         )
     }
 }
+
+private fun provideAlbumsDao(database: AlbumsDatabase): ListingAlbumDao = database.albumsDao()

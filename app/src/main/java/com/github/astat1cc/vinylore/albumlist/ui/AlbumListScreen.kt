@@ -5,10 +5,9 @@ import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.ExperimentalAnimationApi
-import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
 import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -28,7 +27,6 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import androidx.navigation.NavOptions
 import com.github.astat1cc.vinylore.R
-import com.github.astat1cc.vinylore.SLIDE_IN_DURATION
 import com.github.astat1cc.vinylore.albumlist.ui.views.AlbumListHeader
 import com.github.astat1cc.vinylore.navigation.NavigationTree
 import com.github.astat1cc.vinylore.core.models.ui.UiState
@@ -73,7 +71,7 @@ fun AlbumListScreen(
             Intent.FLAG_GRANT_WRITE_URI_PERMISSION
     val dirChosenListener: (Uri) -> Unit = { chosenUri ->
         viewModel.handleChosenDirUri(chosenUri)
-        viewModel.enableAlbumsScan()
+        viewModel.scanAlbums()
     }
     val getDirLauncher =
         rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { chosenDirUri ->
@@ -109,7 +107,7 @@ fun AlbumListScreen(
     ) {
         // header
         AlbumListHeader(
-            refreshButtonListener = { viewModel.enableAlbumsScan() },
+            refreshButtonListener = { viewModel.scanAlbums() },
             backButtonListener = { navController.navigateUp() },
             getDirLauncher = getDirLauncher,
             showRefreshButton = localState !is UiState.Loading
@@ -122,7 +120,13 @@ fun AlbumListScreen(
 //                animationSpec = tween(easing = LinearEasing, durationMillis = SLIDE_IN_DURATION),
                 initialOffsetY = { it }
             ),
-            exit = fadeOut() // doesn't get to it anyway
+            exit = fadeOut(
+                targetAlpha = 1f,
+                animationSpec = tween(
+                    durationMillis = 20,
+                    easing = LinearOutSlowInEasing
+                )
+            ) // 20 ms exit to make it exit fast so when it shows again enter animation is used
         ) {
             if (localState !is UiState.Success) return@AnimatedVisibility
             Box(
@@ -150,7 +154,6 @@ fun AlbumListScreen(
                             horizontalAlignment = Alignment.CenterHorizontally,
                             contentPadding = PaddingValues(top = 8.dp, bottom = 20.dp)
                         ) {
-                            viewModel.disableAlbumsScan()
                             items(localState.data) { album ->
                                 AlbumView(
                                     album,

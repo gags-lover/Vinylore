@@ -51,7 +51,7 @@ interface MusicPlayerInteractor {
             withContext(dispatchers.io()) {
                 try {
                     playingAlbum.emit(
-                        FetchResult.Success(data = commonRepository.fetchPlayingAlbum(refresh = true))
+                        FetchResult.Success(data = commonRepository.fetchPlayingAlbum())
                     )
                 } catch (e: Exception) {
                     playingAlbum.emit(

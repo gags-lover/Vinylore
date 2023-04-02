@@ -16,33 +16,17 @@ class CommonRepositoryImpl(
     private val dispatchers: DispatchersProvider
 ) : CommonRepository {
 
-    private var albumListSnapshot: List<AppListingAlbum>? = null
-
     private var playingAlbumSnapshot: AppPlayingAlbum? = null
 
-    override suspend fun fetchAlbumsForListing(): List<AppListingAlbum>? =
-        // todo do i need refresh var now?
+    override suspend fun fetchPlayingAlbum(): AppPlayingAlbum? =
         withContext(dispatchers.io()) {
-            initializeAlbums()
-            albumListSnapshot // todo just return list with no var
+//            if (playingAlbumSnapshot == null || refresh) {
+            initializePlayingAlbum()
+            playingAlbumSnapshot
+//            } else {
+//                playingAlbumSnapshot
+//            }
         }
-
-    override suspend fun fetchPlayingAlbum(refresh: Boolean): AppPlayingAlbum? =
-        withContext(dispatchers.io()) {
-            if (playingAlbumSnapshot == null || refresh) {
-                initializePlayingAlbum()
-                playingAlbumSnapshot
-            } else {
-                playingAlbumSnapshot
-            }
-        }
-
-    private suspend fun initializeAlbums() {
-        val dirPath = sharedPrefs.getString(AppConst.CHOSEN_ROOT_DIRECTORY_PATH_KEY, null)
-        albumListSnapshot = dirPath?.let {
-            fileProvider.getOnlyAlbumListFrom(dirPath.toUri())
-        }
-    }
 
     private suspend fun initializePlayingAlbum() {
         val albumPath = sharedPrefs.getString(AppConst.PLAYING_ALBUM_PATH_KEY, null)

@@ -1,6 +1,7 @@
 package com.github.astat1cc.vinylore.albumlist.ui
 
 import android.net.Uri
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.github.astat1cc.vinylore.albumlist.domain.AlbumListScreenInteractor
@@ -41,27 +42,21 @@ class AlbumListScreenViewModel(
     }.stateIn(viewModelScope, SharingStarted.Lazily, null)
 
     init {
-        enableAlbumsScan()
+        Log.e("database", "init vm")
         viewModelScope.launch {
             // default delay makes transition animation smoother, because UiState.Loading wouldn't
             // be changed to UiState.Success with probably huge list of items
-            val defaultDelay = launch { delay(AppConst.SLIDE_IN_DURATION.toLong() + 100L) }
-            interactor.fetchAlbums().collect { fetchResult ->
-                defaultDelay.join()
-                _uiState.value = fetchResult.toUiState()
-            }
+            val loadingMinimalDelay = launch { delay(AppConst.SLIDE_IN_DURATION.toLong() + 100L) }
+            val newUiState = interactor.fetchAlbums(scanFirst = false).toUiState()
+            loadingMinimalDelay.join()
+            _uiState.value = newUiState
+
+            // that means either directory is not chosen or the directory is empty
+            if ((newUiState as? UiState.Success)?.data.isNullOrEmpty()) return@launch
+
+            interactor.saveAlbumsInDatabase()
         }
     }
-
-//    init {
-//        fetchAlbums()
-//    }
-
-//    fun fetchAlbums() {
-//        viewModelScope.launch(dispatchers.io()) {
-//            _uiState.value = interactor.fetchAlbums().toUiState()
-//        }
-//    }
 
     fun handleChosenDirUri(uri: Uri) = viewModelScope.launch(dispatchers.io()) {
         interactor.saveChosenDirectoryPath(uri.toString())
@@ -83,18 +78,22 @@ class AlbumListScreenViewModel(
             return@async true
         }.await()
 
-    fun disableAlbumsScan() {
-        interactor.disableAlbumsScan()
-    }
+//    fun disableAlbumsScan() {
+//        interactor.disableAlbumsScan()
+//    }
 
-    fun enableAlbumsScan() {
+    fun scanAlbums() {
         viewModelScope.launch {
             // Popup doesn't hide itself immediately, so user can see how
             // 2 item popup turns into 1 item and then hiding. To escape that there should be delay
             // to give popup time to hide itself
             delay(40L)
+            val loadingMinimalDelay = launch { delay(AppConst.SLIDE_IN_DURATION.toLong() + 100L) }
             _uiState.value = UiState.Loading()
-            interactor.enableAlbumsScan()
+            val newUiState = interactor.fetchAlbums(scanFirst = true).toUiState()
+            loadingMinimalDelay.join()
+            _uiState.value = newUiState
+            interactor.saveAlbumsInDatabase()
         }
     }
 

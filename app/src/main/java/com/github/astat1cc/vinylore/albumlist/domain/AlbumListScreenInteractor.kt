@@ -3,12 +3,8 @@ package com.github.astat1cc.vinylore.albumlist.domain
 import android.net.Uri
 import com.github.astat1cc.vinylore.core.AppErrorHandler
 import com.github.astat1cc.vinylore.core.DispatchersProvider
-import com.github.astat1cc.vinylore.core.common_tracklist.domain.CommonRepository
 import com.github.astat1cc.vinylore.core.models.domain.AppListingAlbum
 import com.github.astat1cc.vinylore.core.models.domain.FetchResult
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.withContext
 
 interface AlbumListScreenInteractor {
@@ -17,20 +13,21 @@ interface AlbumListScreenInteractor {
 
     suspend fun saveChosenPlayingAlbum(albumUri: Uri)
 
-    fun fetchAlbums(): Flow<FetchResult<List<AppListingAlbum>?>>
+    suspend fun fetchAlbums(scanFirst: Boolean): FetchResult<List<AppListingAlbum>?>
 
-    fun disableAlbumsScan()
+    suspend fun saveAlbumsInDatabase()
 
-    fun enableAlbumsScan()
+//    fun disableAlbumsScan()
+
+//    fun enableAlbumsScan()
 
     class Impl(
         private val dispatchers: DispatchersProvider,
         private val albumListScreenRepository: AlbumListScreenRepository,
-        private val commonRepository: CommonRepository,
         private val errorHandler: AppErrorHandler
     ) : AlbumListScreenInteractor {
 
-        private var needToCheckAlbumList = true
+//        private var needToCheckAlbumList = true
 
         override suspend fun saveChosenDirectoryPath(dirPath: String) {
             withContext(dispatchers.io()) {
@@ -44,37 +41,49 @@ interface AlbumListScreenInteractor {
             }
         }
 
-//        override suspend fun fetchAlbums(): FetchResult<List<AppAlbum>?> =
-//            try {
-//                FetchResult.Success(data = commonRepository.fetchAlbums())
-//            } catch (e: Exception) {
-//                FetchResult.Fail(error = errorHandler.getErrorTypeOf(e))
-//            }
-
-        override fun fetchAlbums(): Flow<FetchResult<List<AppListingAlbum>?>> = flow {
-            while (true) {
-                if (needToCheckAlbumList) {
-                    try {
-                        emit(
-                            FetchResult.Success(data = commonRepository.fetchAlbumsForListing())
-                        )
-                    } catch (e: Exception) {
-//                        throw e // todo
-                        emit(
-                            FetchResult.Fail(error = errorHandler.getErrorTypeOf(e))
-                        )
-                    }
+        /**
+         * Function returns null if it's first app launch, i.e. there's no saved albums and no
+         * chosen directory to scan from.
+         */
+        override suspend fun fetchAlbums(scanFirst: Boolean): FetchResult<List<AppListingAlbum>?> =
+            withContext(dispatchers.io()) {
+                try {
+                    FetchResult.Success(data = albumListScreenRepository.fetchAlbumsForListing(scanFirst))
+                } catch (e: Exception) {
+                    FetchResult.Fail(error = errorHandler.getErrorTypeOf(e))
                 }
-                delay(750L)
+            }
+
+        override suspend fun saveAlbumsInDatabase() {
+            withContext(dispatchers.io()) {
+                albumListScreenRepository.saveAlbumsInDatabase()
             }
         }
 
-        override fun disableAlbumsScan() {
-            needToCheckAlbumList = false
-        }
+//        override fun fetchAlbums(): Flow<FetchResult<List<AppListingAlbum>?>> = flow {
+//            while (true) {
+//                if (needToCheckAlbumList) {
+//                    try {
+//                        emit(
+//                            FetchResult.Success(data = commonRepository.fetchAlbumsForListing())
+//                        )
+//                    } catch (e: Exception) {
+////                        throw e // todo
+//                        emit(
+//                            FetchResult.Fail(error = errorHandler.getErrorTypeOf(e))
+//                        )
+//                    }
+//                }
+//                delay(750L)
+//            }
+//        }
 
-        override fun enableAlbumsScan() {
-            needToCheckAlbumList = true
-        }
+//        override fun disableAlbumsScan() {
+//            needToCheckAlbumList = false
+//        }
+
+//        override fun enableAlbumsScan() {
+//            needToCheckAlbumList = true
+//        }
     }
 }

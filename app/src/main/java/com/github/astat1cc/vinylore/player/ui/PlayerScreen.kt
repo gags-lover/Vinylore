@@ -49,7 +49,7 @@ fun PlayerScreen(
     lifecycleOwner: LifecycleOwner = LocalLifecycleOwner.current
 ) {
     val uiState = viewModel.uiState.collectAsState()
-    val albumChoosingCalled = viewModel.albumChoosingCalled.collectAsState()
+    val albumIsNotChosen = viewModel.albumChoosingCalled.collectAsState()
     val vinylAnimationState = viewModel.vinylAnimationState.collectAsState()
     val tonearmAnimationState = viewModel.tonearmAnimationState.collectAsState()
     val discRotation = viewModel.vinylRotation.collectAsState()
@@ -57,7 +57,7 @@ fun PlayerScreen(
     val currentPlayingTrack = viewModel.currentPlayingTrack.collectAsState()
     val trackProgress = viewModel.currentTrackProgress.collectAsState()
     val tonearmLifted = viewModel.tonearmLifted.collectAsState()
-    val trackIsJustPrepared = viewModel.trackIsJustPrepared.collectAsState()
+    val showVinyl = viewModel.showVinyl.collectAsState()
     val shouldRefreshScreen = viewModel.shouldRefreshScreen.collectAsState(initial = false)
     val showPlayIconAtPlayPauseToggle = viewModel.showPlayIconAtPlayPauseToggle.collectAsState()
     val playPauseToggleBlocked = viewModel.playPauseToggleBlocked.collectAsState()
@@ -79,7 +79,7 @@ fun PlayerScreen(
     val localState = uiState.value
     // open album choosing screen if currently no album is chosen (happens only once, then user should
     // click album choosing button manually
-    if (!albumChoosingCalled.value &&
+    if (!albumIsNotChosen.value &&
         localState is UiState.Success &&
         !localState.data.discChosen
     ) {
@@ -198,7 +198,7 @@ fun PlayerScreen(
             changeTonearmRotation = { newRotation ->
                 viewModel.changeTonearmRotationFromAnimation(newRotation)
             },
-            shouldShowVinylAppearanceAnimation = trackIsJustPrepared.value,
+            showVinyl = showVinyl.value,
             vinylAppearanceAnimationShown = {
                 viewModel.vinylAppearanceAnimationShown()
             },
@@ -236,7 +236,8 @@ fun PlayerScreen(
             skipToNext = { viewModel.skipToNext() },
             playingTrack = if (localState is UiState.Loading) null else (currentPlayingTrack.value),
             isPlaying = !showPlayIconAtPlayPauseToggle.value,
-            playPauseToggleBlocked = playPauseToggleBlocked.value
+            playPauseToggleBlocked = playPauseToggleBlocked.value,
+            albumIsNotChosen = albumIsNotChosen.value
         )
         if (orientationPortrait) {
             Column(
@@ -256,9 +257,7 @@ fun PlayerScreen(
     }
 
     // track preparing loading view
-    if (localState is UiState.Loading
-        || currentPlayingTrack.value == null
-    ) {
+    if (!albumIsNotChosen.value && (localState is UiState.Loading || currentPlayingTrack.value == null)) {
         Dialog(onDismissRequest = {}) {
             Box(
                 modifier = Modifier

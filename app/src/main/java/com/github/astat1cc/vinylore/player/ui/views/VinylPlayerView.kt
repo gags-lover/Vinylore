@@ -1,6 +1,5 @@
 package com.github.astat1cc.vinylore.player.ui.views
 
-import android.util.Log
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Image
@@ -18,9 +17,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.zIndex
 import com.github.astat1cc.vinylore.R
 import com.github.astat1cc.vinylore.core.AppConst
 import com.github.astat1cc.vinylore.core.models.ui.AudioTrackUi
@@ -47,7 +44,7 @@ fun VinylPlayerView(
     tonearmLifted: Boolean,
     tonearmTransition: (TonearmState) -> Unit,
     changeTonearmRotation: (Float) -> Unit,
-    shouldShowVinylAppearanceAnimation: Boolean?,
+    showVinyl: Boolean?,
     vinylAppearanceAnimationShown: () -> Unit,
     orientationPortrait: Boolean
 ) {
@@ -66,8 +63,8 @@ fun VinylPlayerView(
 //        "shouldShowAppearance $shouldShowVinylAppearanceAnimation, vinyl is Visible $vinylIsVisible"
 //    )
 
-    LaunchedEffect(shouldShowVinylAppearanceAnimation) {
-        if (shouldShowVinylAppearanceAnimation == true) {
+    LaunchedEffect(showVinyl) {
+        if (showVinyl == true) {
             delay(AppConst.SLIDE_IN_DURATION.toLong())
             vinylAppearanceAnimationShown()
         }
@@ -159,7 +156,7 @@ fun VinylPlayerView(
                     .align(Alignment.CenterStart),
             )
             AnimatedVisibility(
-                visible = playingTrack != null && shouldShowVinylAppearanceAnimation == true,
+                visible = playingTrack != null && showVinyl == true,
                 enter = slideInVertically(
                     initialOffsetY = { -it * 3 / 2 },
                     animationSpec = tween(

@@ -1,28 +1,24 @@
 package com.github.astat1cc.vinylore.player.ui.views
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.RangeSlider
 import androidx.compose.material.Slider
 import androidx.compose.material.SliderDefaults
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.github.astat1cc.vinylore.core.AppConst
+import com.github.astat1cc.vinylore.R
 import com.github.astat1cc.vinylore.core.models.ui.AudioTrackUi
 import com.github.astat1cc.vinylore.core.theme.*
 import com.github.astat1cc.vinylore.player.ui.views.vinyl.AudioControl
@@ -40,7 +36,8 @@ fun TrackInfoAndControlView(
     playingTrack: AudioTrackUi?,
     isPlaying: Boolean,
     playPauseToggleBlocked: Boolean,
-    sliderEnabled: Boolean
+    sliderEnabled: Boolean,
+    albumIsNotChosen: Boolean
 ) {
     Column(
         modifier = modifier
@@ -92,11 +89,15 @@ fun TrackInfoAndControlView(
                 )
             }
         } else {
-            // if artist == null title represents the file's name, so it'd be placed in 2 lined Text
-            // view
+            // If artist == null title represents the file's name, so it'd be placed in 2 lined Text
+            // view. Also if albumIsNotChosen == true, it displays album_not_chosen message
+            val textToDisplay = if (albumIsNotChosen) {
+                stringResource(R.string.album_not_chosen)
+            } else {
+                playingTrack?.title ?: ""
+            }
             Text(
-                text = playingTrack?.title
-                    ?: "", // equals "" only when preparing, so no track name is displayed
+                text = textToDisplay, // equals "" only when preparing, so no track name is displayed
                 fontSize = 24.sp,
                 minLines = 2,
                 maxLines = 2,

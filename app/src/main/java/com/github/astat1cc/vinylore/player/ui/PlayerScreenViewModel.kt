@@ -2,7 +2,6 @@ package com.github.astat1cc.vinylore.player.ui
 
 import android.support.v4.media.MediaBrowserCompat
 import android.support.v4.media.session.PlaybackStateCompat
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.github.astat1cc.vinylore.ServiceConsts
@@ -37,7 +36,6 @@ class PlayerScreenViewModel(
     val uiState: StateFlow<UiState<PlayerScreenUiStateData>> =
         interactor.getAlbumFlow()
             .map { fetchResult ->
-                Log.e("launch", "ui state changing $fetchResult")
                 fetchResult?.toUiState() ?: UiState.Loading()
             }
             .stateIn(viewModelScope, SharingStarted.Lazily, UiState.Loading())
@@ -138,7 +136,7 @@ class PlayerScreenViewModel(
     private var _tonearmLifted = MutableStateFlow(false)
     val tonearmLifted: StateFlow<Boolean> = _tonearmLifted.asStateFlow()
 
-    val trackIsJustPrepared: StateFlow<Boolean?> = serviceConnection.trackIsJustPrepared
+    val showVinyl: StateFlow<Boolean?> = serviceConnection.showVinyl
 
     // should not call prepare if task was removed but service is still working
     // and should if app was just opened and it needs to call first preparing
@@ -257,9 +255,14 @@ class PlayerScreenViewModel(
                         uiState.data.album == null
                     ) return@uiState
 
-                    Log.e("launch", "ui state collecting $uiState")
-
                     prepareMedia(uiState.data.album)
+                }
+            }
+            launch {
+                currentPlayingTrack.collect { track ->
+                    track?.let {
+                        serviceConnection.trackChanged()
+                    }
                 }
             }
             launch {
@@ -275,9 +278,7 @@ class PlayerScreenViewModel(
         preparingJob?.cancel()
         preparingJob = viewModelScope.launch {
             while (true) {
-                Log.e("launch", "inside loop")
                 if (isConnected.value) {
-//                    Log.e("launch", "is connected ${isConnected.value}")
                     serviceConnection.prepareMedia(album)
                     return@launch
                 }
@@ -293,10 +294,13 @@ class PlayerScreenViewModel(
         sliderDraggingProgressSyncJob?.cancel()
         usualProgressSyncJob = viewModelScope.launch {
             while (true) {
-                if (!trackIsChanging && shouldStartSynchronizeTonearmRotationWithProgress) {
+                if (!trackIsChanging &&
+                    shouldStartSynchronizeTonearmRotationWithProgress &&
+                    !sliderIsDraggingNow
+                ) {
                     _tonearmRotation.value = getRotationFrom(_currentTrackProgress.value)
                 }
-                delay(100L)
+                delay(900L)
             }
         }
     }
@@ -453,11 +457,11 @@ class PlayerScreenViewModel(
         }
     }
 
-    private var draggingSliderForTheFirstTime = true
+    private var sliderIsDraggingNow = false
     fun dragSlider(newValue: Float) {
         if (trackIsChanging) return
-        if (draggingSliderForTheFirstTime) {
-            draggingSliderForTheFirstTime = false
+        if (!sliderIsDraggingNow) { // that means dragSlider was called for the first time
+            sliderIsDraggingNow = true
             updatePosition = false
             startSliderDraggingProgressSync()
             _tonearmLifted.value = true
@@ -474,7 +478,7 @@ class PlayerScreenViewModel(
         startUsualProgressSync()
         _tonearmLifted.value = false
         updatePosition = true
-        draggingSliderForTheFirstTime = true
+        sliderIsDraggingNow = false
     }
 
     private fun launchPlaybackUpdating() {

@@ -16,7 +16,8 @@
     <string name="album_collection">ALBUM COLLECTION</string>
     <string name="track_list">TRACK LIST</string>
     <string name="preparing_media">Preparing media…</string>
-    <string name="scanning_folders">Scanning folders…</string>
+    <string name="scanning_folders">Scanning folders… It may take a long time.</string>
     <string name="scan">Scan</string>
     <string name="change_root">Change root</string>
+    <string name="album_not_chosen">"Album not chosen."</string>
 </resources>

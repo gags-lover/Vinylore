@@ -22,6 +22,7 @@ import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
@@ -41,7 +42,6 @@ import org.koin.androidx.compose.getViewModel
 // todo when u chose already chosen album don't stop playing
 // todo scrolling bar
 
-@OptIn(ExperimentalAnimationApi::class)
 @Composable
 fun AlbumListScreen(
     navController: NavHostController,
@@ -190,10 +190,11 @@ fun AlbumListScreen(
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         CircularProgressIndicator(color = vintagePaper)
                         Text(
-                            modifier = Modifier.padding(top = 8.dp),
+                            modifier = Modifier.padding(vertical = 12.dp, horizontal = 20.dp),
                             text = stringResource(R.string.scanning_folders),
                             color = vintagePaper,
                             fontSize = 18.sp,
+                            textAlign = TextAlign.Center
                         )
                     }
                 }

@@ -35,8 +35,8 @@ class MediaPlayerServiceConnection(
     private val _playingAlbum = MutableStateFlow<PlayingAlbumUi?>(null)
     val playingAlbum: StateFlow<PlayingAlbumUi?> = _playingAlbum.asStateFlow()
 
-    private val _trackIsJustPrepared = MutableStateFlow<Boolean?>(null)
-    val trackIsJustPrepared: StateFlow<Boolean?> = _trackIsJustPrepared.asStateFlow()
+    private val _showVinyl = MutableStateFlow<Boolean?>(null)
+    val showVinyl: StateFlow<Boolean?> = _showVinyl.asStateFlow()
 
     private val _shouldRefreshMusicService = MutableSharedFlow<Boolean>(replay = 0)
     val shouldRefreshMusicService: SharedFlow<Boolean> = _shouldRefreshMusicService.asSharedFlow()
@@ -103,8 +103,10 @@ class MediaPlayerServiceConnection(
         muteCalled = false
     }
 
-    fun prepareMedia(album: PlayingAlbumUi) {
+    private var trackChanged = false
+    suspend fun prepareMedia(album: PlayingAlbumUi) {
         emitPlayerState(CustomPlayerState.IDLE)
+        _showVinyl.value = false
         _playingAlbum.value = album
         mediaBrowser.sendCustomAction(
             ServiceConsts.PREPARE_MEDIA_ACTION,
@@ -116,7 +118,19 @@ class MediaPlayerServiceConnection(
             trackToPlay.uri.toString(),
             null
         )
-        _trackIsJustPrepared.value = true
+        trackChanged = true
+    }
+
+    /**
+     * Function called by viewmodel when it collects new non null currentPlayingTrack to add delay
+     * before vinyl's slideIn.
+     */
+    suspend fun trackChanged() {
+        if (trackChanged) {
+            delay(600L)
+            _showVinyl.value = true
+            trackChanged = false
+        }
     }
 
     private fun emitPlayerState(newState: CustomPlayerState) {
@@ -165,11 +179,11 @@ class MediaPlayerServiceConnection(
             emitPlayerState(CustomPlayerState.CHANGING_TRACK)
             blockChangingPlayerState = true
             mediaBrowser.sendCustomAction(ServiceConsts.PAUSE_MEDIA_PLAY_ACTION, null, null)
-            _trackIsJustPrepared.value = false // vinyl shrinks out
+            _showVinyl.value = false // vinyl shrinks out
             delay(AppConst.TONEARM_MOVING_FROM_DISC_TO_START_POSITION_DURATION + 50L)
             transportControl.skipToNext()
             delay(AppConst.DELAY_AFTER_SKIPPING_BEFORE_SHOWING_VINYL) // to give more time to call all the mediaChanged calls and improve performance
-            _trackIsJustPrepared.value = true // vinyl slides in
+            _showVinyl.value = true // vinyl slides in
             blockChangingPlayerState = false
             if (stateBeforeChanging == CustomPlayerState.IDLE) {
                 emitPlayerState(stateBeforeChanging)
@@ -200,7 +214,7 @@ class MediaPlayerServiceConnection(
             if (_customPlayerState.value == CustomPlayerState.IDLE) {
                 emitPlayerState(CustomPlayerState.CHANGING_TRACK)
                 blockChangingPlayerState = true
-                _trackIsJustPrepared.value = false
+                _showVinyl.value = false
                 delay(AppConst.TONEARM_MOVING_FROM_DISC_TO_START_POSITION_DURATION + 50L)
                 val itemQueuePositionToBePlayed =
                     if (currentTrackQueuePosition != 0L) {
@@ -212,7 +226,7 @@ class MediaPlayerServiceConnection(
                     }
                 skipToQueueItem(itemQueuePositionToBePlayed)
                 delay(AppConst.DELAY_AFTER_SKIPPING_BEFORE_SHOWING_VINYL) // to give more time to call all the mediaChanged calls and improve performance
-                _trackIsJustPrepared.value = true
+                _showVinyl.value = true
                 blockChangingPlayerState = false
                 emitPlayerState(CustomPlayerState.IDLE)
                 blockSkipping = false
@@ -239,11 +253,11 @@ class MediaPlayerServiceConnection(
                 emitPlayerState(CustomPlayerState.CHANGING_TRACK)
                 blockChangingPlayerState = true
                 mediaBrowser.sendCustomAction(ServiceConsts.PAUSE_MEDIA_PLAY_ACTION, null, null)
-                _trackIsJustPrepared.value = false
+                _showVinyl.value = false
                 delay(AppConst.TONEARM_MOVING_FROM_DISC_TO_START_POSITION_DURATION + 50L)
                 skipToQueueItem(currentTrackQueuePosition - 1)
                 delay(AppConst.DELAY_AFTER_SKIPPING_BEFORE_SHOWING_VINYL) // to give more time to call all the mediaChanged calls and improve performance
-                _trackIsJustPrepared.value = true
+                _showVinyl.value = true
                 blockChangingPlayerState = false
                 blockSkipping = false
                 delay(AppConst.SLIDE_IN_DURATION + 150L) // vinyl slides in + some additional delay

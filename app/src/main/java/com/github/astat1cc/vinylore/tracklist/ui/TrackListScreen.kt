@@ -57,7 +57,7 @@ fun TrackListScreen(
         )
     }
 
-    Column(modifier = Modifier.background(vintagePaper)) {
+    Column(modifier = Modifier.fillMaxSize().background(vintagePaper)) {
         Box(modifier = Modifier.fillMaxWidth()) {
             // back button
             Icon(

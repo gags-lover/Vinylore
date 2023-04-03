@@ -62,7 +62,7 @@ fun AlbumListScreen(
 
     val configuration = LocalConfiguration.current
     val screenDensity = configuration.densityDpi / 160f
-    val screenWidth = configuration.screenWidthDp * screenDensity
+    val screenHeight = configuration.screenHeightDp * screenDensity
 
     val localCoroutineScope = rememberCoroutineScope()
 
@@ -161,7 +161,7 @@ fun AlbumListScreen(
                                         onAlbumClick(albumUri)
                                     },
                                     clickedAlbumUri = clickedAlbumUri.value,
-                                    screenWidth = screenWidth.toInt(),
+                                    screenHeight = screenHeight.toInt(),
                                     isPlayingNow = album.uri == currentPlayingAlbumUri.value
                                 )
                             }

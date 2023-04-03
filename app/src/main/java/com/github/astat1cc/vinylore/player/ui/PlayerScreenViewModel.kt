@@ -37,6 +37,7 @@ class PlayerScreenViewModel(
     val uiState: StateFlow<UiState<PlayerScreenUiStateData>> =
         interactor.getAlbumFlow()
             .map { fetchResult ->
+                Log.e("launch", "ui state changing $fetchResult")
                 fetchResult?.toUiState() ?: UiState.Loading()
             }
             .stateIn(viewModelScope, SharingStarted.Lazily, UiState.Loading())
@@ -94,14 +95,6 @@ class PlayerScreenViewModel(
     private val shouldShowSmoothStartAndStopVinylAnimation = MutableStateFlow(false)
 
     private val currentSongDuration = MusicService.curSongDuration
-//        .map { duration ->
-//        Log.e("dur", duration.toString())
-//        if (duration < 120000) { // if less than 2 minutes
-//            120000
-//        } else {
-//            duration
-//        }
-//    }.stateIn(viewModelScope, SharingStarted.Lazily, 0L)
 
     private val _currentTrackProgress = MutableStateFlow<Float>(0f)
     val currentTrackProgress: StateFlow<Float> = _currentTrackProgress.asStateFlow()
@@ -157,7 +150,6 @@ class PlayerScreenViewModel(
                 } ?: true
 
     init {
-        Log.e("meta","init vm: ${this.hashCode()}, should $shouldCallPrepare")
         launchPlaybackUpdating()
         with(viewModelScope) {
             launch {
@@ -258,30 +250,38 @@ class PlayerScreenViewModel(
                 }
             }
             launch {
-                uiState.collect { uiState ->
-                    if (uiState !is UiState.Success) return@collect
+                // calls prepare every time album changed in uiState
+                uiState.collect uiState@{ uiState ->
+                    if (uiState !is UiState.Success ||
+                        !shouldCallPrepare ||
+                        uiState.data.album == null
+                    ) return@uiState
 
-//                    Log.e(
-//                        "meta",
-//                        "collecting uiState ${uiState.data.album}, taskRemoved ${MusicService.taskWasRemoved.value}, vm: ${this@PlayerScreenViewModel.hashCode()}"
-//                    )
-                    if (!shouldCallPrepare) return@collect
-                    var prepareCalled = false
-                    while (!prepareCalled) {
-                        if (uiState.data.album != null &&
-                            isConnected.value
-                        ) {
-                            serviceConnection.prepareMedia(uiState.data.album)
-                            prepareCalled = true
-                        }
-                        delay(1000L)
-                    }
+                    Log.e("launch", "ui state collecting $uiState")
+
+                    prepareMedia(uiState.data.album)
                 }
             }
             launch {
                 if (shouldCallPrepare) interactor.initializeAlbum()
                 if (taskWasRemoved.value) MusicService.taskRestored()
                 startUsualProgressSync()
+            }
+        }
+    }
+
+    private var preparingJob: Job? = null
+    private fun prepareMedia(album: PlayingAlbumUi) {
+        preparingJob?.cancel()
+        preparingJob = viewModelScope.launch {
+            while (true) {
+                Log.e("launch", "inside loop")
+                if (isConnected.value) {
+//                    Log.e("launch", "is connected ${isConnected.value}")
+                    serviceConnection.prepareMedia(album)
+                    return@launch
+                }
+                delay(300L)
             }
         }
     }
@@ -315,7 +315,7 @@ class PlayerScreenViewModel(
     }
 
     private fun getRotationFrom(percentageProgress: Float) =
-    // divided by 5.26 to make 100% progress equal to 19 points of rotation, so
+// divided by 5.26 to make 100% progress equal to 19 points of rotation, so
         // start rotation amount + this value would give end rotation amount
         AppConst.VINYL_TRACK_START_TONEARM_ROTATION + percentageProgress / 5.26f
 

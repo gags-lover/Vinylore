@@ -21,7 +21,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.PopupProperties
 import com.github.astat1cc.vinylore.R
 import com.github.astat1cc.vinylore.core.theme.brown
 
@@ -69,7 +68,7 @@ fun AlbumListHeader(
             if (showRefreshButton) {
                 listOf(
                     AppDropdownMenuItem(
-                        text = stringResource(R.string.refresh),
+                        text = stringResource(R.string.scan),
                         onClick = {
                             showPopup = false
                             refreshButtonListener()

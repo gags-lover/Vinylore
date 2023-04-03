@@ -34,7 +34,6 @@ fun TrackInfoAndControlView(
     trackProgress: Float,
     sliderDraggingFinished: () -> Unit,
     sliderDragging: (Float) -> Unit,
-    tonearmRotation: Float,
     togglePlayPause: () -> Unit,
     skipToPrevious: () -> Unit,
     skipToNext: () -> Unit,
@@ -61,7 +60,7 @@ fun TrackInfoAndControlView(
         // track name
         if (playingTrack?.artist != null) {
             Column(
-                modifier = Modifier.padding(top = 32.dp, start = 20.dp, end = 20.dp),
+                modifier = Modifier.padding(top = 16.dp, start = 20.dp, end = 20.dp),
 //            Modifier.height(112.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
@@ -104,7 +103,7 @@ fun TrackInfoAndControlView(
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center,
                 modifier = Modifier
-                    .padding(start = 20.dp, end = 20.dp, top = 32.dp)
+                    .padding(start = 20.dp, end = 20.dp, top = 16.dp)
                     .fillMaxWidth(),
                 overflow = TextOverflow.Ellipsis,
                 color = Color.White
@@ -131,7 +130,7 @@ fun TrackInfoAndControlView(
                 maxLines = 2,
                 textAlign = TextAlign.Center,
                 modifier = Modifier
-                    .padding(vertical = 16.dp)
+                    .padding(vertical = 8.dp)
                     .fillMaxWidth(),
                 overflow = TextOverflow.Ellipsis,
                 color = Color.LightGray

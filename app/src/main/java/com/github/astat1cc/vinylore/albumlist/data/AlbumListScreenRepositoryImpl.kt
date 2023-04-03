@@ -36,7 +36,7 @@ class AlbumListScreenRepositoryImpl(
     override suspend fun saveChosenDirectoryPath(dirPath: String) {
         sharedPrefs.edit()
             .putString(AppConst.CHOSEN_ROOT_DIRECTORY_PATH_KEY, dirPath)
-            .apply()
+            .commit()
     }
 
     override suspend fun fetchAlbumsForListing(scanFirst: Boolean): List<AppListingAlbum>? =

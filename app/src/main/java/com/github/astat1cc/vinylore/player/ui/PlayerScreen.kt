@@ -217,7 +217,6 @@ fun PlayerScreen(
                 viewModel.dragSlider(newValue)
             },
             sliderEnabled = sliderEnabled.value,
-            tonearmRotation = tonearmRotation.value,
             togglePlayPause = {
                 if (localState is UiState.Success &&
                     localState.data.album != null

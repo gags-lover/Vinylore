@@ -1,14 +1,13 @@
 package com.github.astat1cc.vinylore.albumlist.ui.views
 
 import android.net.Uri
+import androidx.compose.animation.*
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -24,9 +23,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import com.github.astat1cc.vinylore.R
+import com.github.astat1cc.vinylore.core.AppConst
 import com.github.astat1cc.vinylore.core.models.ui.ListingAlbumUi
 import com.github.astat1cc.vinylore.core.theme.brownForGradient
-import com.github.astat1cc.vinylore.core.theme.darkBackground
 import com.github.astat1cc.vinylore.player.ui.views.dpToSp
 
 @Composable
@@ -34,10 +33,10 @@ fun AlbumView(
     album: ListingAlbumUi,
     onClick: (Uri) -> Unit,
     clickedAlbumUri: Uri?,
-    screenWidth: Int,
+    screenHeight: Int,
     isPlayingNow: Boolean
 ) {
-    // todo remove discs if isPplayingNow
+    // todo remove discs if isPlayingNow
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -50,18 +49,37 @@ fun AlbumView(
     ) {
         Box(
             modifier = Modifier
-                .size(width = 160.dp, height = 100.dp)
+                .size(width = 160.dp, height = 128.dp)
                 .zIndex(1f)
         ) {
             androidx.compose.animation.AnimatedVisibility(
-                visible = clickedAlbumUri != album.uri,
-                exit = slideOutHorizontally(
-                    targetOffsetX = { screenWidth },
-                    animationSpec = tween(
-                        durationMillis = 250,
-                        easing = LinearEasing,
+                visible = clickedAlbumUri == null,
+                exit =
+//                shrinkOut(
+//                    animationSpec = tween(
+//                        durationMillis = AppConst.SLIDE_OUT_DURATION,
+//                        easing = FastOutLinearInEasing,
+//                    ),
+//                    clip = false,
+//                    targetSize = { IntSize(screenWidth, -screenWidth * 3) }
+//                )
+                if (clickedAlbumUri == album.uri) {
+                    slideOutVertically(
+                        targetOffsetY = { -screenHeight },
+                        animationSpec = tween(
+                            durationMillis = AppConst.SLIDE_OUT_DURATION + 100,
+                            easing = LinearEasing,
+                            delayMillis = 250 // FADE_OUT_DURATION + 50 millis just in case
+                        )
                     )
-                )
+                } else {
+                    fadeOut(
+                        animationSpec = tween(
+                            durationMillis = AppConst.FADE_OUT_DURATION,
+                            easing = LinearEasing
+                        )
+                    )
+                }
             ) {
                 Box(
                     contentAlignment = Alignment.CenterStart,
@@ -69,7 +87,9 @@ fun AlbumView(
                     Image(
                         painter = painterResource(R.drawable.album_in_list),
                         contentDescription = null,
-                        modifier = Modifier.width(160.dp),
+                        modifier = Modifier
+                            .width(160.dp)
+                            .height(128.dp),
                         contentScale = ContentScale.FillWidth,
                     )
                     Text(

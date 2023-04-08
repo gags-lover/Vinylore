@@ -37,7 +37,7 @@ fun TrackInfoAndControlView(
     isPlaying: Boolean,
     playPauseToggleBlocked: Boolean,
     sliderEnabled: Boolean,
-    albumIsNotChosen: Boolean
+    errorMessage: String?
 ) {
     Column(
         modifier = modifier
@@ -90,12 +90,8 @@ fun TrackInfoAndControlView(
             }
         } else {
             // If artist == null title represents the file's name, so it'd be placed in 2 lined Text
-            // view. Also if albumIsNotChosen == true, it displays album_not_chosen message
-            val textToDisplay = if (albumIsNotChosen) {
-                stringResource(R.string.album_not_chosen)
-            } else {
-                playingTrack?.title ?: ""
-            }
+            // view. Also if there's error message, it displays it instead of title
+            val textToDisplay = errorMessage ?: playingTrack?.title ?: ""
             Text(
                 text = textToDisplay, // equals "" only when preparing, so no track name is displayed
                 fontSize = 24.sp,

@@ -12,4 +12,6 @@ interface AlbumListScreenRepository {
     suspend fun fetchAlbumsForListing(scanFirst: Boolean): List<AppListingAlbum>?
 
     suspend fun saveAlbumsInDatabase()
+
+    suspend fun fetchLastChosenAlbum(): Uri?
 }

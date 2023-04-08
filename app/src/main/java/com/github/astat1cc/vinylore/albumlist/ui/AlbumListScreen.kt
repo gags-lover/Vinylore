@@ -4,7 +4,6 @@ import android.content.Intent
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeOut
@@ -49,7 +48,7 @@ fun AlbumListScreen(
 ) {
     val uiState = viewModel.uiState.collectAsState()
     val clickedAlbumUri = viewModel.clickedAlbumUri.collectAsState()
-    val currentPlayingAlbumUri = viewModel.currentPlayingAlbumUri.collectAsState()
+    val lastChosenAlbumUri = viewModel.lastChosenAlbumUri.collectAsState()
     val shouldNavigateToPlayer = viewModel.shouldNavigateToPlayer.collectAsState(initial = false)
 
     if (shouldNavigateToPlayer.value) {
@@ -71,7 +70,6 @@ fun AlbumListScreen(
             Intent.FLAG_GRANT_WRITE_URI_PERMISSION
     val dirChosenListener: (Uri) -> Unit = { chosenUri ->
         viewModel.handleChosenDirUri(chosenUri)
-        viewModel.scanAlbums()
     }
     val getDirLauncher =
         rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { chosenDirUri ->
@@ -154,6 +152,7 @@ fun AlbumListScreen(
                             horizontalAlignment = Alignment.CenterHorizontally,
                             contentPadding = PaddingValues(top = 8.dp, bottom = 20.dp)
                         ) {
+//                            item { Text(text = "Last scan: " + lastScanDate) }
                             items(localState.data) { album ->
                                 AlbumView(
                                     album,
@@ -162,7 +161,7 @@ fun AlbumListScreen(
                                     },
                                     clickedAlbumUri = clickedAlbumUri.value,
                                     screenHeight = screenHeight.toInt(),
-                                    isPlayingNow = album.uri == currentPlayingAlbumUri.value
+                                    isPlayingNow = album.uri == lastChosenAlbumUri.value
                                 )
                             }
                         }

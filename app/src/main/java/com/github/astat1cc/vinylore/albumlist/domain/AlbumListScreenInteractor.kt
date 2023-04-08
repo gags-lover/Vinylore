@@ -13,6 +13,8 @@ interface AlbumListScreenInteractor {
 
     suspend fun saveChosenPlayingAlbum(albumUri: Uri)
 
+    suspend fun fetchLastChosenAlbum(): Uri?
+
     suspend fun fetchAlbums(scanFirst: Boolean): FetchResult<List<AppListingAlbum>?>
 
     suspend fun saveAlbumsInDatabase()
@@ -41,6 +43,11 @@ interface AlbumListScreenInteractor {
             }
         }
 
+        override suspend fun fetchLastChosenAlbum(): Uri? =
+            withContext(dispatchers.io()) {
+                albumListScreenRepository.fetchLastChosenAlbum()
+            }
+
         /**
          * Function returns null if it's first app launch, i.e. there's no saved albums and no
          * chosen directory to scan from.
@@ -48,7 +55,11 @@ interface AlbumListScreenInteractor {
         override suspend fun fetchAlbums(scanFirst: Boolean): FetchResult<List<AppListingAlbum>?> =
             withContext(dispatchers.io()) {
                 try {
-                    FetchResult.Success(data = albumListScreenRepository.fetchAlbumsForListing(scanFirst))
+                    FetchResult.Success(
+                        data = albumListScreenRepository.fetchAlbumsForListing(
+                            scanFirst
+                        )
+                    )
                 } catch (e: Exception) {
                     FetchResult.Fail(error = errorHandler.getErrorTypeOf(e))
                 }

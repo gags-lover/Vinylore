@@ -33,12 +33,12 @@ fun TonearmAnimated(
         rotationAnimatable.snapTo(currentRotation)
         when (tonearmState) {
             TonearmState.MOVING_FROM_IDLE_TO_START_POSITION -> {
-                delay(1500L)
                 rotationAnimatable.animateTo(
                     targetValue = AppConst.VINYL_TRACK_START_TONEARM_ROTATION,
                     animationSpec = tween(
                         durationMillis = 1350,
-                        easing = LinearEasing
+                        easing = LinearEasing,
+                        delayMillis = 1500
                     )
                 ) {
                     changeRotation(value)

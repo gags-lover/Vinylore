@@ -2,13 +2,10 @@ package com.github.astat1cc.vinylore.player.ui.service
 
 import android.app.PendingIntent
 import android.content.Context
-import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.drawable.Drawable
 import android.support.v4.media.session.MediaControllerCompat
 import android.support.v4.media.session.MediaSessionCompat
-import android.util.Log
-import androidx.core.app.NotificationCompat
 import com.bumptech.glide.Glide
 import com.bumptech.glide.request.target.CustomTarget
 import com.bumptech.glide.request.transition.Transition
@@ -33,8 +30,8 @@ class MusicNotificationManager(
                 .setStopActionIconResourceId(R.drawable.ic_close)
 //                .setCustomActionReceiver(CustomActionReceiver())
                 .setMediaDescriptionAdapter(DescriptionAdapter(mediaController))
-                .setChannelNameResourceId(R.string.mock1) // todo remove mocks
-                .setChannelDescriptionResourceId(R.string.mock2)
+                .setChannelNameResourceId(R.string.vinylore) // todo remove mocks
+                .setChannelDescriptionResourceId(R.string.playing_now)
                 .build().apply {
                     setMediaSessionToken(sessionToken)
                     setSmallIcon(R.drawable.ic_notification_vinyl_disc)

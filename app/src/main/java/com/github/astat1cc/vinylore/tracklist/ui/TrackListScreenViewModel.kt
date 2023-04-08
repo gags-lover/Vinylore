@@ -1,6 +1,5 @@
 package com.github.astat1cc.vinylore.tracklist.ui
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.github.astat1cc.vinylore.core.AppErrorHandler
@@ -12,7 +11,6 @@ import com.github.astat1cc.vinylore.player.ui.service.MediaPlayerServiceConnecti
 import com.github.astat1cc.vinylore.tracklist.ui.model.TrackListScreenUiStateData
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
-import kotlinx.coroutines.launch
 
 class TrackListScreenViewModel(
     private val errorHandler: AppErrorHandler,
@@ -26,11 +24,13 @@ class TrackListScreenViewModel(
             // to let animation be smooth without lagging
             delay(500L)
             when {
+                // it means album is either not chosen or is empty
                 uiStateData.album == null -> {
-                    UiState.Fail(message = errorHandler.getErrorMessage(ErrorType.ALBUM_IS_NOT_CHOSEN))
+                    UiState.Fail(message = errorHandler.getErrorMessage(ErrorType.NoTrackList))
                 }
+                // never gets to it
                 uiStateData.album.trackList.isEmpty() -> {
-                    UiState.Fail(message = errorHandler.getErrorMessage(ErrorType.DIR_IS_EMPTY))
+                    UiState.Fail(message = errorHandler.getErrorMessage(ErrorType.DirIsEmpty))
                 }
                 else -> {
                     UiState.Success(uiStateData)

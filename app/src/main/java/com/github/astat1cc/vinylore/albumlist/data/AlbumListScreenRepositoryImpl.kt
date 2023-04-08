@@ -39,6 +39,9 @@ class AlbumListScreenRepositoryImpl(
             .commit()
     }
 
+    override suspend fun fetchLastChosenAlbum(): Uri? =
+        sharedPrefs.getString(AppConst.PLAYING_ALBUM_PATH_KEY, null)?.toUri()
+
     override suspend fun fetchAlbumsForListing(scanFirst: Boolean): List<AppListingAlbum>? =
         withContext(dispatchers.io()) {
             if (scanFirst) {

@@ -1,6 +1,7 @@
 package com.github.astat1cc.vinylore.player.ui.service
 
 import android.app.PendingIntent
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
@@ -12,9 +13,9 @@ import android.support.v4.media.session.PlaybackStateCompat
 import android.util.Log
 import android.widget.Toast
 import androidx.media.MediaBrowserServiceCompat
+import com.github.astat1cc.vinylore.R
 import com.github.astat1cc.vinylore.ServiceConsts
 import com.github.astat1cc.vinylore.ServiceConsts.MY_MEDIA_ROOT_ID
-import com.github.astat1cc.vinylore.R
 import com.google.android.exoplayer2.ExoPlayer
 import com.google.android.exoplayer2.PlaybackException
 import com.google.android.exoplayer2.PlaybackParameters
@@ -26,6 +27,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import org.koin.android.ext.android.inject
+import java.io.File
 
 // todo when service is killed, app is not i need to launch service again
 
@@ -51,6 +53,7 @@ class MusicService : MediaBrowserServiceCompat() {
     var currentPlayingMedia: MediaMetadataCompat? = null
     private var isPlayerInitialized = false
     var isForegroundService = false
+    private var errorOccurred = false
 
     companion object {
 
@@ -108,7 +111,7 @@ class MusicService : MediaBrowserServiceCompat() {
 
         musicNotificationManager.showNotification(trackExoPlayer)
 
-        startPlayersSync() // todo if this right
+        startPlayersSync()
     }
 
     private fun loadSource() {
@@ -211,11 +214,13 @@ class MusicService : MediaBrowserServiceCompat() {
     }
 
     private fun startTrackPlaying() {
+        if (errorOccurred) return
         startPlayersSync()
         trackExoPlayer.playWhenReady = true
     }
 
     private fun startCrackle() {
+        if (errorOccurred) return // that means player error occurred
         stopPlayerSync()
         crackleExoPlayer.playWhenReady = true
     }
@@ -238,7 +243,7 @@ class MusicService : MediaBrowserServiceCompat() {
                 delay(100L)
             }
             trackExoPlayer.playWhenReady = false
-            crackleExoPlayer.playWhenReady = false
+//            crackleExoPlayer.playWhenReady = false
 
             // because it seems that app saves params even after closing app
             trackExoPlayer.playbackParameters = PlaybackParameters(1f, 1f)
@@ -249,12 +254,13 @@ class MusicService : MediaBrowserServiceCompat() {
 
     private var shouldSlowlyResume = false
     private fun slowlyResume() {
+        if (errorOccurred) return
         shouldSlowlyResume = true
         shouldSlowlyPause = false
         serviceScope.launch {
             launch {
                 delay(50L)
-                crackleExoPlayer.playWhenReady = true
+//                crackleExoPlayer.playWhenReady = true
                 trackExoPlayer.playWhenReady = true
             }
             var currentSpeed = 0.1f
@@ -294,6 +300,39 @@ class MusicService : MediaBrowserServiceCompat() {
 //            stop()
 //            clearMediaItems()
 //        }
+    }
+
+    fun clearCacheAndStopService() {
+        serviceScope.launch(Dispatchers.IO) {
+            deleteCache(this@MusicService)
+            stopSelf()
+        }
+    }
+
+    private fun deleteCache(context: Context) {
+        try {
+            val dir: File = context.getCacheDir()
+            val result = deleteDir(dir)
+            Log.e("cache", "deleted $result")
+        } catch (e: Exception) {
+        }
+    }
+
+    private fun deleteDir(dir: File?): Boolean {
+        return if (dir != null && dir.isDirectory()) {
+            val children: Array<String> = dir.list()
+            for (i in children.indices) {
+                val success = deleteDir(File(dir, children[i]))
+                if (!success) {
+                    return false
+                }
+            }
+            dir.delete()
+        } else if (dir != null && dir.isFile()) {
+            dir.delete()
+        } else {
+            false
+        }
     }
 
     private inner class AudioMediaPlayBackPreparer : MediaSessionConnector.PlaybackPreparer {
@@ -389,10 +428,12 @@ class MusicService : MediaBrowserServiceCompat() {
             override fun onPlaybackStateChanged(playbackState: Int) {
                 when (playbackState) {
                     Player.STATE_BUFFERING, Player.STATE_READY -> {
+                        errorOccurred = false
                         musicNotificationManager.showNotification(trackExoPlayer)
                     }
                     else -> {
                         musicNotificationManager.hideNotification()
+                        stopCrackle()
                     }
                 }
             }
@@ -406,14 +447,15 @@ class MusicService : MediaBrowserServiceCompat() {
             }
 
             override fun onPlayerError(error: PlaybackException) {
-                var message = error.message
-//                var message = R.string.generic_error
+                errorOccurred = true
+                val message =
+                    if (error.errorCode == PlaybackException.ERROR_CODE_IO_FILE_NOT_FOUND) {
+                        getString(R.string.error_media_not_found)
+                    } else {
+                        error.message
+                    }
 
-                if (error.errorCode == PlaybackException.ERROR_CODE_IO_FILE_NOT_FOUND) {
-                    message = getString(R.string.error_media_not_found)
-                }
-
-                Toast.makeText(applicationContext, message, Toast.LENGTH_SHORT).show()
+                Toast.makeText(applicationContext, message, Toast.LENGTH_LONG).show()
             }
         }
     }

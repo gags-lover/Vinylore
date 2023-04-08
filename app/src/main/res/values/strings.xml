@@ -6,18 +6,20 @@
     <string name="something_went_wrong">Something went wrong.</string>
     <string name="generic_error">Something went wrong.</string>
     <string name="error_media_not_found">Media not found</string>
-    <string name="mock1">mock1</string>
-    <string name="mock2">mock2</string>
+    <string name="vinylore">Vinylore</string>
+    <string name="playing_now">Playing now</string>
     <string name="try_again">Try again</string>
     <string name="you_should_chose_dir">You should chose directory where your files placed.</string>
     <string name="chose_dir">Chose directory</string>
-    <string name="dir_is_empty">Directory is empty. Add some media</string>
-    <string name="album_is_not_chosen">Album is not chosen</string>
+    <string name="dir_is_empty">Directory is empty.</string>
     <string name="album_collection">ALBUM COLLECTION</string>
     <string name="track_list">TRACK LIST</string>
     <string name="preparing_media">Preparing media…</string>
-    <string name="scanning_folders">Scanning folders… It may take a long time.</string>
+    <string name="scanning_folders">Scanning folders. It may take a long time.</string>
     <string name="scan">Scan</string>
     <string name="change_root">Change root</string>
-    <string name="album_not_chosen">"Album not chosen."</string>
+    <string name="no_album_selected">"No album selected."</string>
+    <string name="album_is_empty">Album is empty</string>
+    <string name="cannot_read_folder">Can\'t read folder. Probably it was deleted.</string>
+    <string name="no_track_list">No track list.</string>
 </resources>

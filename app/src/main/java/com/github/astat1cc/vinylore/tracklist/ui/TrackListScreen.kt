@@ -39,7 +39,6 @@ import org.koin.androidx.compose.getViewModel
 
 //todo handle if empty list maybe
 
-@OptIn(ExperimentalAnimationApi::class)
 @Composable
 fun TrackListScreen(
     navController: NavHostController,
@@ -57,7 +56,11 @@ fun TrackListScreen(
         )
     }
 
-    Column(modifier = Modifier.fillMaxSize().background(vintagePaper)) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(vintagePaper)
+    ) {
         Box(modifier = Modifier.fillMaxWidth()) {
             // back button
             Icon(
@@ -119,17 +122,27 @@ fun TrackListScreen(
                 }
             }
         }
-        when (localState) {
-            // loading
-            is UiState.Loading -> {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            when (localState) {
+                // loading
+                is UiState.Loading -> {
+
                     CircularProgressIndicator(color = darkBackground)
                 }
+                is UiState.Fail -> {
+                    Text(
+                        modifier = Modifier.padding(horizontal = 8.dp),
+                        textAlign = TextAlign.Center,
+                        text = localState.message,
+                        color = Color.Black,
+                        fontSize = 18.sp
+                    )
+                }
+                else -> {}
             }
-            else -> {} // todo fail
         }
     }
 }

@@ -68,7 +68,7 @@ fun TrackView(
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
                 fontWeight = FontWeight.Bold,
-                fontSize = 18.sp
+                fontSize = 16.sp
             )
             // Duration view
             Text(
@@ -76,7 +76,7 @@ fun TrackView(
                 text = track.duration.toDurationStyle(),
                 maxLines = 1,
                 fontWeight = FontWeight.SemiBold,
-                fontSize = 16.sp
+                fontSize = 14.sp
             )
         }
     }
@@ -88,16 +88,16 @@ fun TrackView(
 private fun Modifier.customBackground(isCurrentlyPlaying: Boolean): Modifier =
     if (isCurrentlyPlaying) this.background(Color.LightGray) else this
 
-private val hourInMillis = 3600000L
+private const val hourInMillis = 3600000L
 private fun Long.toDurationStyle(): String =
     if (this > hourInMillis) {
         val hours = TimeUnit.MILLISECONDS.toHours(this)
-        val minutes = TimeUnit.MILLISECONDS.toMinutes(this) - TimeUnit.MINUTES.toMinutes(hours)
+        val minutes = TimeUnit.MILLISECONDS.toMinutes(this) - hours * 60
         String.format(
             "%02d:%02d:%02d",
             hours,
             minutes,
-            TimeUnit.MILLISECONDS.toSeconds(this) - TimeUnit.MINUTES.toSeconds(minutes)
+            TimeUnit.MILLISECONDS.toSeconds(this) - hours * 3600 - minutes * 60
         )
     } else {
         val minutes = TimeUnit.MILLISECONDS.toMinutes(this)

@@ -6,7 +6,10 @@ import com.github.astat1cc.vinylore.core.DispatchersProvider
 import com.github.astat1cc.vinylore.core.common_tracklist.domain.CommonRepository
 import com.github.astat1cc.vinylore.core.models.domain.AppPlayingAlbum
 import com.github.astat1cc.vinylore.core.models.domain.FetchResult
+import com.github.astat1cc.vinylore.core.models.exceptions.AlbumIsEmptyException
+import com.github.astat1cc.vinylore.core.models.exceptions.NoAlbumSelectedException
 import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
 
 interface MusicPlayerInteractor {
@@ -20,7 +23,7 @@ interface MusicPlayerInteractor {
     /**
      * Always returns the same instance of SharedFlow
      */
-    fun getAlbumFlow(): SharedFlow<FetchResult<AppPlayingAlbum?>?>
+    fun getAlbumFlow(): SharedFlow<FetchResult<AppPlayingAlbum>?>
 
     /**
      * Fetching album and emitting FetchResult to the instance of SharedFlow, which can be returned
@@ -32,7 +35,7 @@ interface MusicPlayerInteractor {
 //    fun clearFlow()
 
     class Impl(
-//        private val playerRepository: MusicPlayerRepository,
+//        private val playerRepository: MusicPlayerRepository, todo
         private val commonRepository: CommonRepository,
         private val dispatchers: DispatchersProvider,
         private val errorHandler: AppErrorHandler
@@ -40,25 +43,31 @@ interface MusicPlayerInteractor {
 
         // we need the same instance for viewmodel and service, so we're holding our album
         // in a variable instead of creating and returning new flow every time the function called
-        private val playingAlbum = MutableSharedFlow<FetchResult<AppPlayingAlbum?>?>(replay = 1)
+        private val playingAlbum = MutableSharedFlow<FetchResult<AppPlayingAlbum>?>(replay = 1)
 
-        override fun getAlbumFlow(): SharedFlow<FetchResult<AppPlayingAlbum?>?> {
+        override fun getAlbumFlow(): SharedFlow<FetchResult<AppPlayingAlbum>?> {
             return playingAlbum.asSharedFlow()
         }
 
         override suspend fun initializeAlbum() {
             playingAlbum.emit(null)
             withContext(dispatchers.io()) {
-                try {
-                    playingAlbum.emit(
-                        FetchResult.Success(data = commonRepository.fetchPlayingAlbum())
-                    )
-                } catch (e: Exception) {
-                    playingAlbum.emit(
-                        FetchResult.Fail(error = errorHandler.getErrorTypeOf(e))
-                    )
+//                if (isActive) {
+                    try {
+                        val album =
+                            commonRepository.fetchPlayingAlbum() ?: throw NoAlbumSelectedException()
+                        if (album.trackList.isEmpty()) throw AlbumIsEmptyException()
+                        playingAlbum.emit(
+                            FetchResult.Success(data = album)
+                        )
+                    } catch (e: Exception) {
+                        Log.e("exception", e.toString())
+                        playingAlbum.emit(
+                            FetchResult.Fail(error = errorHandler.getErrorTypeOf(e))
+                        )
+                    }
                 }
-            }
+//            }
         }
     }
 }

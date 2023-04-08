@@ -49,7 +49,7 @@ fun PlayerScreen(
     lifecycleOwner: LifecycleOwner = LocalLifecycleOwner.current
 ) {
     val uiState = viewModel.uiState.collectAsState()
-    val albumIsNotChosen = viewModel.albumChoosingCalled.collectAsState()
+    val shouldNavigateToAlbumChoosing = viewModel.shouldNavigateToAlbumChoosing.collectAsState()
     val vinylAnimationState = viewModel.vinylAnimationState.collectAsState()
     val tonearmAnimationState = viewModel.tonearmAnimationState.collectAsState()
     val discRotation = viewModel.vinylRotation.collectAsState()
@@ -79,9 +79,8 @@ fun PlayerScreen(
     val localState = uiState.value
     // open album choosing screen if currently no album is chosen (happens only once, then user should
     // click album choosing button manually
-    if (!albumIsNotChosen.value &&
-        localState is UiState.Success &&
-        !localState.data.discChosen
+    if (shouldNavigateToAlbumChoosing.value &&
+        localState is UiState.Fail
     ) {
         viewModel.albumChoosingCalled()
         navController.navigate(NavigationTree.AlbumList.name)
@@ -141,8 +140,7 @@ fun PlayerScreen(
             )
             // album name
             Text(
-                text = if (localState is UiState.Success) localState.data.album?.name?.uppercase()
-                    ?: "" else "",
+                text = if (localState is UiState.Success) localState.data.name.uppercase() else "",
                 fontWeight = FontWeight.Bold,
                 fontSize = 22.sp,
                 maxLines = 1,
@@ -218,18 +216,14 @@ fun PlayerScreen(
             },
             sliderEnabled = sliderEnabled.value,
             togglePlayPause = {
-                if (localState is UiState.Success &&
-                    localState.data.album != null
-                ) { // todo handle ui state of error
-                    viewModel.playPauseToggle()
-                }
+                viewModel.playPauseToggle()
             },
             skipToPrevious = {
                 val position =
                     (localState as? UiState.Success)?.let { uiState ->
-                        uiState.data.album?.trackList?.indexOf(
+                        uiState.data.trackList.indexOf(
                             currentPlayingTrack.value
-                        )?.toLong()
+                        ).toLong()
                     }
                 viewModel.skipToPrevious(currentTrackQueuePosition = position)
             },
@@ -237,7 +231,7 @@ fun PlayerScreen(
             playingTrack = if (localState is UiState.Loading) null else (currentPlayingTrack.value),
             isPlaying = !showPlayIconAtPlayPauseToggle.value,
             playPauseToggleBlocked = playPauseToggleBlocked.value,
-            albumIsNotChosen = albumIsNotChosen.value
+            errorMessage = (localState as? UiState.Fail)?.message
         )
         if (orientationPortrait) {
             Column(
@@ -257,13 +251,12 @@ fun PlayerScreen(
     }
 
     // track preparing loading view
-    if (!albumIsNotChosen.value && (localState is UiState.Loading || currentPlayingTrack.value == null)) {
+    if (localState !is UiState.Fail &&
+        (localState is UiState.Loading || currentPlayingTrack.value == null)
+    ) {
         Dialog(onDismissRequest = {}) {
             Box(
-                modifier = Modifier
-                    .fillMaxSize()
-//                    .background(color = dimBackground)
-                ,
+                modifier = Modifier.fillMaxSize() ,
                 contentAlignment = Center
             ) {
                 Column(horizontalAlignment = CenterHorizontally) {

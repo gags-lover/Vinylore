@@ -5,12 +5,16 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.media.MediaMetadataRetriever
 import android.net.Uri
+import android.util.Log
 import androidx.documentfile.provider.DocumentFile
 import com.github.astat1cc.vinylore.R
 import com.github.astat1cc.vinylore.core.models.domain.AppPlayingAlbum
 import com.github.astat1cc.vinylore.core.models.domain.AppAudioTrack
 import com.github.astat1cc.vinylore.core.models.domain.AppListingAlbum
+import com.github.astat1cc.vinylore.core.models.exceptions.AlbumIsEmptyException
+import com.github.astat1cc.vinylore.core.models.exceptions.CanNotReadFolderException
 import com.github.astat1cc.vinylore.core.util.removeUnderscoresAndPathSegment
+import java.lang.NullPointerException
 
 // todo make try here to avoid crashes
 
@@ -84,10 +88,17 @@ interface AppFileProvider {
                 context,
                 uri
             )!! // always non-null because returns null only if sdk < 21
+
+            // it means folder of the given uri is either was deleted or can't be read
+            if (!chosenDir.canRead()) throw CanNotReadFolderException()
+
             val trackList = chosenDir.getTrackList()
+            if (trackList.isEmpty()) throw AlbumIsEmptyException()
+
             val artistOfFirstTrack = trackList[0].artist
+
             return AppPlayingAlbum(
-                folderPath = uri, // todo do i need id at all
+                folderPath = uri,
                 name = chosenDir.name ?: getDefaultName(),
                 trackList = trackList,
                 albumOfOneArtist = if (artistOfFirstTrack != null) {

@@ -2,17 +2,18 @@ package com.github.astat1cc.vinylore.player.ui
 
 import android.support.v4.media.MediaBrowserCompat
 import android.support.v4.media.session.PlaybackStateCompat
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.github.astat1cc.vinylore.ServiceConsts
 import com.github.astat1cc.vinylore.core.AppConst
 import com.github.astat1cc.vinylore.core.AppErrorHandler
 import com.github.astat1cc.vinylore.core.models.domain.AppPlayingAlbum
+import com.github.astat1cc.vinylore.core.models.domain.ErrorType
 import com.github.astat1cc.vinylore.core.models.domain.FetchResult
 import com.github.astat1cc.vinylore.core.models.ui.PlayingAlbumUi
 import com.github.astat1cc.vinylore.core.models.ui.AudioTrackUi
 import com.github.astat1cc.vinylore.player.domain.MusicPlayerInteractor
-import com.github.astat1cc.vinylore.player.ui.models.PlayerScreenUiStateData
 import com.github.astat1cc.vinylore.player.ui.service.*
 import com.github.astat1cc.vinylore.player.ui.views.tonearm.TonearmState
 import com.github.astat1cc.vinylore.player.ui.views.vinyl.VinylDiscState
@@ -33,15 +34,16 @@ class PlayerScreenViewModel(
     private val serviceConnection: MediaPlayerServiceConnection
 ) : ViewModel() {
 
-    val uiState: StateFlow<UiState<PlayerScreenUiStateData>> =
+    val uiState: StateFlow<UiState<PlayingAlbumUi>> =
         interactor.getAlbumFlow()
             .map { fetchResult ->
                 fetchResult?.toUiState() ?: UiState.Loading()
             }
             .stateIn(viewModelScope, SharingStarted.Lazily, UiState.Loading())
 
-    private val _albumChoosingCalled = MutableStateFlow<Boolean>(false)
-    val albumChoosingCalled: StateFlow<Boolean> = _albumChoosingCalled.asStateFlow()
+    private val _shouldNavigateToAlbumChoosing = MutableStateFlow<Boolean>(false)
+    val shouldNavigateToAlbumChoosing: StateFlow<Boolean> =
+        _shouldNavigateToAlbumChoosing.asStateFlow()
 
     private val customPlayerState: StateFlow<CustomPlayerState> =
         serviceConnection.customPlayerState
@@ -152,6 +154,14 @@ class PlayerScreenViewModel(
         with(viewModelScope) {
             launch {
                 serviceConnection.shouldRefreshMusicService.collect { should ->
+                    // Because connection doesn't know about state Fail, and it thinks screen should
+                    // be refreshed. Also app can throw CancellationException which should be ignored
+                    // here and screen should be refreshed that case.
+                    val state = uiState.value
+                    if (state is UiState.Fail &&
+                        state.message != AppErrorHandler.Impl.CancellationErrorMessage
+                    ) return@collect
+
                     _shouldRefreshScreen.value = should
                 }
             }
@@ -250,12 +260,10 @@ class PlayerScreenViewModel(
             launch {
                 // calls prepare every time album changed in uiState
                 uiState.collect uiState@{ uiState ->
-                    if (uiState !is UiState.Success ||
-                        !shouldCallPrepare ||
-                        uiState.data.album == null
+                    if (uiState !is UiState.Success || !shouldCallPrepare
                     ) return@uiState
 
-                    prepareMedia(uiState.data.album)
+                    prepareMedia(album = uiState.data)
                 }
             }
             launch {
@@ -300,7 +308,10 @@ class PlayerScreenViewModel(
                 ) {
                     _tonearmRotation.value = getRotationFrom(_currentTrackProgress.value)
                 }
-                delay(900L)
+
+                // not 1 sec because it also affects cases when state is PAUSED and  user just
+                // clicks to seek to needed position
+                delay(200L)
             }
         }
     }
@@ -325,7 +336,7 @@ class PlayerScreenViewModel(
 
     fun playPauseToggle() {
         if (!initialDelayForPlayButtonBlockingPassed) return
-        if (uiState.value !is UiState.Success) return // todo handle some error message
+        if (uiState.value !is UiState.Success || currentPlayingTrack.value == null) return
         if (vinylAnimationState.value == VinylDiscState.STARTING ||
             vinylAnimationState.value == VinylDiscState.STOPPING
         ) return
@@ -375,27 +386,31 @@ class PlayerScreenViewModel(
         }
     }
 
-    private fun FetchResult<AppPlayingAlbum?>.toUiState(): UiState<PlayerScreenUiStateData> =
+    private fun FetchResult<AppPlayingAlbum>.toUiState(): UiState<PlayingAlbumUi> =
         when (this) {
             is FetchResult.Success -> {
-                val album = if (data == null) null else PlayingAlbumUi.fromDomain(data)
-                val discChosen = album != null
+                val album = PlayingAlbumUi.fromDomain(data)
                 UiState.Success(
-                    PlayerScreenUiStateData(
-                        album = album,
-                        discChosen = discChosen
-                    )
+                    album
+//                    PlayerScreenUiStateData(
+//                        album = album,
+//                        discChosen = discChosen
+//                    )
                 )
             }
             is FetchResult.Fail -> {
+//                _albumIsNotChosen.value = true
+                stopPlayback()
+                serviceConnection.handleFailAlbum()
+                if (error is ErrorType.NoAlbumSelected) _shouldNavigateToAlbumChoosing.value = true
                 UiState.Fail(
                     message = errorHandler.getErrorMessage(error)
                 )
             }
         }
 
-    fun stopPlayback() {
-        serviceConnection.transportControl.stop()
+    private fun stopPlayback() {
+        serviceConnection.stop()
     }
 
     fun fastForward() {
@@ -407,21 +422,27 @@ class PlayerScreenViewModel(
     }
 
     fun skipToNext() {
+        if (uiState.value !is UiState.Success) return
         viewModelScope.launch {
             trackIsChanging = true
             serviceConnection.skipToNext()?.join()
             if (_tonearmAnimationState.value != TonearmState.IDLE_POSITION) {
                 while (trackIsChanging) {
+                    Log.e("drag", "${_currentTrackProgress.value}")
                     if (_currentTrackProgress.value < 2f) {
+                        Log.e("drag", "emitting track is changing false")
                         trackIsChanging = false
+                        return@launch
                     }
                     delay(100L)
                 }
             }
+            trackIsChanging = false
         }
     }
 
     fun skipToPrevious(currentTrackQueuePosition: Long?) {
+        if (uiState.value !is UiState.Success) return
         if (currentTrackQueuePosition == null) return // that means uiState is not Success
         viewModelScope.launch {
             trackIsChanging = true
@@ -430,30 +451,12 @@ class PlayerScreenViewModel(
                 while (trackIsChanging) {
                     if (_currentTrackProgress.value < 2f) {
                         trackIsChanging = false
+                        return@launch
                     }
                     delay(100L)
                 }
             }
-//        if (currentTrackQueuePosition == null) return // that means uiState is not Success
-//        viewModelScope.launch {
-//            shouldStartSynchronizeTonearmRotationWithProgress = false
-//            _tonearmLifted.value = true
-//            _tonearmAnimationState.value = TonearmState.MOVING_FROM_DISC_TO_START_POSITION
-//            serviceConnection.skipToPrevious(currentTrackQueuePosition = currentTrackQueuePosition)
-//                .join()
-//            _tonearmLifted.value = false
-//            while (!shouldStartSynchronizeTonearmRotationWithProgress) {
-//                if (_currentPlaybackPosition.value < 2000f) {
-//                    Log.e(
-//                        "tonearm",
-//                        "should be less than 2f: " + _currentTrackProgress.value.toString()
-//                    )
-//                    shouldStartSynchronizeTonearmRotationWithProgress = true
-//                    _tonearmAnimationState.value = TonearmState.MOVING_ABOVE_DISC
-//                }
-//                delay(100L)
-//            }
-//        }
+            trackIsChanging = false
         }
     }
 
@@ -471,14 +474,20 @@ class PlayerScreenViewModel(
     }
 
     fun sliderDraggingFinished() {
-        serviceConnection.transportControl.seekTo(
-            (currentSongDuration.value * currentTrackProgress.value / 100f).toLong()
-        )
-        serviceConnection.unmuteVolume()
-        startUsualProgressSync()
-        _tonearmLifted.value = false
-        updatePosition = true
-        sliderIsDraggingNow = false
+        viewModelScope.launch {
+            val positionToSeek =
+                (currentSongDuration.value * currentTrackProgress.value / 100f).toLong()
+            serviceConnection.transportControl.seekTo(positionToSeek)
+            serviceConnection.unmuteVolume()
+            _tonearmLifted.value = false
+            updatePosition = true
+            sliderIsDraggingNow = false
+
+            // to escape cases when slider dragging is finished but then it for 1 second comes back
+            // to prev position because progress update synchronized.
+            delay(1000L)
+            startUsualProgressSync()
+        }
     }
 
     private fun launchPlaybackUpdating() {
@@ -549,7 +558,7 @@ class PlayerScreenViewModel(
     }
 
     fun albumChoosingCalled() {
-        _albumChoosingCalled.value = true
+        _shouldNavigateToAlbumChoosing.value = false
 //        interactor.clearFlow()
     }
 

@@ -6,7 +6,7 @@ import com.github.astat1cc.vinylore.core.models.domain.AppPlayingAlbum
 
 data class PlayingAlbumUi(
     val uri: Uri,
-    val name: String?,
+    val name: String,
     val trackList: List<AudioTrackUi>,
     val albumOfOneArtist: Boolean
 ) {

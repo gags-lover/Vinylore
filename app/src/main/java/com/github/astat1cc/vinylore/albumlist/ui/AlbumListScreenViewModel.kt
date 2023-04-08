@@ -37,9 +37,8 @@ class AlbumListScreenViewModel(
 
     val shouldNavigateToPlayer = serviceConnection.shouldRefreshMusicService
 
-    val currentPlayingAlbumUri: StateFlow<Uri?> = serviceConnection.playingAlbum.map { album ->
-        album?.uri
-    }.stateIn(viewModelScope, SharingStarted.Lazily, null)
+    private val _lastChosenAlbumUri = MutableStateFlow<Uri?>(null)
+    val lastChosenAlbumUri: StateFlow<Uri?> = _lastChosenAlbumUri.asStateFlow()
 
     init {
         Log.e("database", "init vm")
@@ -56,10 +55,14 @@ class AlbumListScreenViewModel(
 
             interactor.saveAlbumsInDatabase()
         }
+        viewModelScope.launch {
+            _lastChosenAlbumUri.value = interactor.fetchLastChosenAlbum()
+        }
     }
 
     fun handleChosenDirUri(uri: Uri) = viewModelScope.launch(dispatchers.io()) {
         interactor.saveChosenDirectoryPath(uri.toString())
+        scanAlbums()
     }
 
     /**
@@ -68,7 +71,7 @@ class AlbumListScreenViewModel(
      */
     suspend fun handleClickedAlbumUri(clickedAlbumUri: Uri): Boolean =
         viewModelScope.async(dispatchers.io()) {
-            if (serviceConnection.playingAlbum.value?.uri == clickedAlbumUri) return@async false
+            if (_lastChosenAlbumUri.value == clickedAlbumUri) return@async false
             serviceConnection.clearCurrentPlayingTrack()
             interactor.saveChosenPlayingAlbum(clickedAlbumUri)
             _clickedAlbumUri.value = clickedAlbumUri

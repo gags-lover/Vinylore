@@ -6,7 +6,6 @@ import android.support.v4.media.MediaBrowserCompat
 import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.MediaControllerCompat
 import android.support.v4.media.session.PlaybackStateCompat
-import android.util.Log
 import com.github.astat1cc.vinylore.ServiceConsts
 import com.github.astat1cc.vinylore.core.AppConst
 import com.github.astat1cc.vinylore.core.models.ui.PlayingAlbumUi
@@ -25,6 +24,10 @@ class MediaPlayerServiceConnection(
 
     private val _playbackState = MutableStateFlow<PlaybackStateCompat?>(null)
     val playbackState: StateFlow<PlaybackStateCompat?> = _playbackState.asStateFlow()
+
+    fun handleFailAlbum() {
+        _playingAlbum.value = null
+    }
 
     private val _isConnected = MutableStateFlow<Boolean>(false)
     val isConnected: StateFlow<Boolean> = _isConnected.asStateFlow()
@@ -103,8 +106,9 @@ class MediaPlayerServiceConnection(
         muteCalled = false
     }
 
-    private var trackChanged = false
-    suspend fun prepareMedia(album: PlayingAlbumUi) {
+    private var albumChanged = false
+    fun prepareMedia(album: PlayingAlbumUi) {
+        playerLaunchingJob?.cancel()
         emitPlayerState(CustomPlayerState.IDLE)
         _showVinyl.value = false
         _playingAlbum.value = album
@@ -118,7 +122,7 @@ class MediaPlayerServiceConnection(
             trackToPlay.uri.toString(),
             null
         )
-        trackChanged = true
+        albumChanged = true
     }
 
     /**
@@ -126,10 +130,10 @@ class MediaPlayerServiceConnection(
      * before vinyl's slideIn.
      */
     suspend fun trackChanged() {
-        if (trackChanged) {
-            delay(600L)
+        if (albumChanged) {
+            delay(400L)
             _showVinyl.value = true
-            trackChanged = false
+            albumChanged = false
         }
     }
 
@@ -142,9 +146,11 @@ class MediaPlayerServiceConnection(
         _customPlayerState.value = newState
     }
 
+    private var playerLaunchingJob: Job? = null
     fun launchPlaying() {
         emitPlayerState(CustomPlayerState.LAUNCHING)
-        connectionScope.launch {
+        playerLaunchingJob?.cancel()
+        playerLaunchingJob = connectionScope.launch {
             delay(3200L)
             mediaBrowser.sendCustomAction(ServiceConsts.START_CRACKLE_ACTION, null, null)
             emitPlayerState(CustomPlayerState.PLAYING)
@@ -326,12 +332,11 @@ class MediaPlayerServiceConnection(
         transportControl.play()
     }
 
-//    fun refreshUsed() {
-//        refreshCalled = false
-//        connectionScope.launch {
-//            _shouldRefreshMusicService.emit(false)
-//        }
-//    }
+    fun stop() {
+        if (this::mediaController.isInitialized) {
+            transportControl.stop()
+        }
+    }
 
     private inner class MediaBrowserConnectionCallback(
         private val context: Context

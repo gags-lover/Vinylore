@@ -142,10 +142,12 @@ class MusicService : MediaBrowserServiceCompat() {
     }
 
     override fun onDestroy() {
-        super.onDestroy()
-
+        Log.e("destroy", "onDestroy")
+//        deleteCache(this)
         serviceScope.cancel()
         trackExoPlayer.release()
+
+        super.onDestroy()
     }
 
     override fun onGetRoot(
@@ -243,7 +245,7 @@ class MusicService : MediaBrowserServiceCompat() {
                 delay(100L)
             }
             trackExoPlayer.playWhenReady = false
-//            crackleExoPlayer.playWhenReady = false
+            crackleExoPlayer.playWhenReady = false
 
             // because it seems that app saves params even after closing app
             trackExoPlayer.playbackParameters = PlaybackParameters(1f, 1f)

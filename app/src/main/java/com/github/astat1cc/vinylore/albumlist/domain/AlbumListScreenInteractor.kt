@@ -19,6 +19,8 @@ interface AlbumListScreenInteractor {
 
     suspend fun saveAlbumsInDatabase()
 
+    suspend fun fetchLastScanTimeAgo(): String?
+
 //    fun disableAlbumsScan()
 
 //    fun enableAlbumsScan()
@@ -70,6 +72,9 @@ interface AlbumListScreenInteractor {
                 albumListScreenRepository.saveAlbumsInDatabase()
             }
         }
+
+        override suspend fun fetchLastScanTimeAgo(): String? =
+            albumListScreenRepository.fetchLastScanTimeAgo()
 
 //        override fun fetchAlbums(): Flow<FetchResult<List<AppListingAlbum>?>> = flow {
 //            while (true) {

@@ -256,7 +256,7 @@ fun PlayerScreen(
     ) {
         Dialog(onDismissRequest = {}) {
             Box(
-                modifier = Modifier.fillMaxSize() ,
+                modifier = Modifier.fillMaxSize(),
                 contentAlignment = Center
             ) {
                 Column(horizontalAlignment = CenterHorizontally) {

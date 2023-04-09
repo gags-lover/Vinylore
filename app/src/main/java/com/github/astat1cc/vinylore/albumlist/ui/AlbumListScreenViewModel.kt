@@ -40,23 +40,32 @@ class AlbumListScreenViewModel(
     private val _lastChosenAlbumUri = MutableStateFlow<Uri?>(null)
     val lastChosenAlbumUri: StateFlow<Uri?> = _lastChosenAlbumUri.asStateFlow()
 
+    private val _lastScanTimeAgo = MutableStateFlow<String?>("")
+    val lastScanTimeAgo = _lastScanTimeAgo.asStateFlow()
+
     init {
         Log.e("database", "init vm")
-        viewModelScope.launch {
-            // default delay makes transition animation smoother, because UiState.Loading wouldn't
-            // be changed to UiState.Success with probably huge list of items
-            val loadingMinimalDelay = launch { delay(AppConst.SLIDE_IN_DURATION.toLong() + 100L) }
-            val newUiState = interactor.fetchAlbums(scanFirst = false).toUiState()
-            loadingMinimalDelay.join()
-            _uiState.value = newUiState
+        with(viewModelScope) {
+            launch {
+                // default delay makes transition animation smoother, because UiState.Loading wouldn't
+                // be changed to UiState.Success with probably huge list of items
+                val loadingMinimalDelay =
+                    launch { delay(AppConst.SLIDE_IN_DURATION.toLong() + 100L) }
+                val newUiState = interactor.fetchAlbums(scanFirst = false).toUiState()
+                loadingMinimalDelay.join()
+                _uiState.value = newUiState
 
-            // that means either directory is not chosen or the directory is empty
-            if ((newUiState as? UiState.Success)?.data.isNullOrEmpty()) return@launch
+                // that means either directory is not chosen or the directory is empty
+                if ((newUiState as? UiState.Success)?.data.isNullOrEmpty()) return@launch
 
-            interactor.saveAlbumsInDatabase()
-        }
-        viewModelScope.launch {
-            _lastChosenAlbumUri.value = interactor.fetchLastChosenAlbum()
+                interactor.saveAlbumsInDatabase()
+            }
+            launch {
+                _lastChosenAlbumUri.value = interactor.fetchLastChosenAlbum()
+            }
+            launch {
+                _lastScanTimeAgo.value = interactor.fetchLastScanTimeAgo()
+            }
         }
     }
 
@@ -95,6 +104,7 @@ class AlbumListScreenViewModel(
             val newUiState = interactor.fetchAlbums(scanFirst = true).toUiState()
             loadingMinimalDelay.join()
             _uiState.value = newUiState
+            _lastScanTimeAgo.value = interactor.fetchLastScanTimeAgo()
             interactor.saveAlbumsInDatabase()
         }
     }

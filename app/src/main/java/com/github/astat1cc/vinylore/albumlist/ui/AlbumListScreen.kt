@@ -18,6 +18,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -50,6 +51,7 @@ fun AlbumListScreen(
     val clickedAlbumUri = viewModel.clickedAlbumUri.collectAsState()
     val lastChosenAlbumUri = viewModel.lastChosenAlbumUri.collectAsState()
     val shouldNavigateToPlayer = viewModel.shouldNavigateToPlayer.collectAsState(initial = false)
+    val lastScanTimeAgo = viewModel.lastScanTimeAgo.collectAsState()
 
     if (shouldNavigateToPlayer.value) {
         navController.navigate(
@@ -141,8 +143,11 @@ fun AlbumListScreen(
                     }
                     localState.data.isEmpty() -> {
                         Text(
+                            modifier = Modifier.padding(horizontal = 8.dp),
+                            textAlign = TextAlign.Center,
                             text = stringResource(id = R.string.dir_is_empty),
-                            color = vintagePaper // todo make normal style
+                            color = Color.White,
+                            fontSize = 16.sp
                         )
                     }
                     else -> {
@@ -152,7 +157,20 @@ fun AlbumListScreen(
                             horizontalAlignment = Alignment.CenterHorizontally,
                             contentPadding = PaddingValues(top = 8.dp, bottom = 20.dp)
                         ) {
-//                            item { Text(text = "Last scan: " + lastScanDate) }
+                            item {
+                                Text(
+                                    modifier = Modifier.padding(horizontal = 8.dp),
+                                    textAlign = TextAlign.Center,
+                                    text =
+                                    "${stringResource(R.string.last_scan_was)} " + "${
+                                        (lastScanTimeAgo.value ?: stringResource(
+                                            R.string.undefined_time_ago
+                                        ))
+                                    }.",
+                                    color = Color.White,
+                                    fontSize = 16.sp
+                                )
+                            }
                             items(localState.data) { album ->
                                 AlbumView(
                                     album,

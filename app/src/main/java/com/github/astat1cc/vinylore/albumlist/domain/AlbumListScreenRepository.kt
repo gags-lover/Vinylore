@@ -14,4 +14,6 @@ interface AlbumListScreenRepository {
     suspend fun saveAlbumsInDatabase()
 
     suspend fun fetchLastChosenAlbum(): Uri?
+
+    suspend fun fetchLastScanTimeAgo(): String?
 }

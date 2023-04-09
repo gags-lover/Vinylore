@@ -11,8 +11,12 @@ import com.github.astat1cc.vinylore.core.AppConst
 import com.github.astat1cc.vinylore.core.DispatchersProvider
 import com.github.astat1cc.vinylore.core.common_tracklist.data.AppFileProvider
 import com.github.astat1cc.vinylore.core.models.domain.AppListingAlbum
+import com.github.astat1cc.vinylore.core.util.TimeAgo
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
+import org.ocpsoft.prettytime.PrettyTime
+import java.util.*
+
 
 class AlbumListScreenRepositoryImpl(
     private val sharedPrefs: SharedPreferences,
@@ -42,6 +46,9 @@ class AlbumListScreenRepositoryImpl(
     override suspend fun fetchLastChosenAlbum(): Uri? =
         sharedPrefs.getString(AppConst.PLAYING_ALBUM_PATH_KEY, null)?.toUri()
 
+    override suspend fun fetchLastScanTimeAgo(): String? =
+        TimeAgo.getTimeAgo(sharedPrefs.getLong(AppConst.LAST_SCAN_DATE_KEY, -1L))
+
     override suspend fun fetchAlbumsForListing(scanFirst: Boolean): List<AppListingAlbum>? =
         withContext(dispatchers.io()) {
             if (scanFirst) {
@@ -62,6 +69,12 @@ class AlbumListScreenRepositoryImpl(
     private suspend fun fetchAlbumsFromFileProvider(): List<AppListingAlbum>? =
         sharedPrefs.getString(AppConst.CHOSEN_ROOT_DIRECTORY_PATH_KEY, null)?.let { dirPath ->
             val albums = fileProvider.getOnlyAlbumListFrom(dirPath.toUri())
+            sharedPrefs.edit()
+                .putLong(AppConst.LAST_SCAN_DATE_KEY, System.currentTimeMillis())
+                .apply()
+
+//            val currentTime = Calendar.getInstance().time.toString()
+//            Log.e("calendar", currentTime)
             albumsToSave = albums
             Log.e("database", "fetched from file provider count: ${albums.size}")
             return@let albums

@@ -22,4 +22,6 @@
     <string name="album_is_empty">Album is empty</string>
     <string name="cannot_read_folder">Can\'t read folder. Probably it was deleted.</string>
     <string name="no_track_list">No track list.</string>
+    <string name="last_scan_was">Last scan was</string>
+    <string name="undefined_time_ago">undefined time ago</string>
 </resources>

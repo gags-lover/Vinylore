@@ -29,8 +29,8 @@ fun ChoseDirectoryButton(
             modifier = Modifier.padding(horizontal = 8.dp),
             textAlign = TextAlign.Center,
             text = messageText,
-            color = vintagePaper,
-            fontSize = 18.sp
+            color = Color.White,
+            fontSize = 16.sp
         )
         Button(
             modifier = Modifier.padding(top = 16.dp),

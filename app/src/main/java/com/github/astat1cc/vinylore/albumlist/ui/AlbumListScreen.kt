@@ -159,7 +159,7 @@ fun AlbumListScreen(
                         ) {
                             item {
                                 Text(
-                                    modifier = Modifier.padding(horizontal = 8.dp),
+                                    modifier = Modifier.padding(8.dp),
                                     textAlign = TextAlign.Center,
                                     text =
                                     "${stringResource(R.string.last_scan_was)} " + "${

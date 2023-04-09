@@ -81,11 +81,11 @@ class AlbumListScreenViewModel(
     suspend fun handleClickedAlbumUri(clickedAlbumUri: Uri): Boolean =
         viewModelScope.async(dispatchers.io()) {
             if (_lastChosenAlbumUri.value == clickedAlbumUri) return@async false
-            serviceConnection.clearCurrentPlayingTrack()
             interactor.saveChosenPlayingAlbum(clickedAlbumUri)
             _clickedAlbumUri.value = clickedAlbumUri
             // delay of albums fadeOut and chosen album slideOut animation
             delay(AppConst.FADE_OUT_DURATION + AppConst.SLIDE_OUT_DURATION + 200L)
+            serviceConnection.clearCurrentPlayingTrack()
             return@async true
         }.await()
 

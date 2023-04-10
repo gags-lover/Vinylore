@@ -9,7 +9,7 @@ The only thing you need is your Android device and a collection of your favourit
 
 ## Download and Install
 
-To use Vinylore, Download the **Vinylore-v1-0-0.zip**  from the [here](https://github.com/astat1cc/Vinylore/releases/latest). To install, unzip the archive file and click the apk installer.
+To use Vinylore, Download the **Vinylore-v1-0-0.apk**  from the [here](https://github.com/astat1cc/Vinylore/releases/latest). To install, open the file file and install.
  
  ## **Technologies**
 - **Android SDK**
